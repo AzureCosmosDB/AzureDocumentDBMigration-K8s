@@ -5,6 +5,9 @@ param(
     [string]$ReleaseTag = "latest",
     [string]$PackageAsset = "migration-package.zip",
 
+    # --- Local package source (temporary override; skips GitHub download) ---
+    [string]$LocalPackagePath = "",
+
     # --- Azure target ---
     [string]$Subscription = "",
     [string]$ResourceGroup = "mongo-migration-engine-rg",
@@ -72,28 +75,37 @@ foreach ($tool in @("az", "kubectl")) {
     }
 }
 
-if ($GitHubRepo -eq "<owner>/<repo>") {
-    throw "Please provide -GitHubRepo '<owner>/<repo>' pointing to the release repository."
-}
-
 if (-not [string]::IsNullOrWhiteSpace($Subscription)) {
     Write-Log "[0/6] Set Azure subscription" -Level STEP
     Invoke-NativeCommand "az" @("account", "set", "--subscription", $Subscription)
 }
 
 Write-Log "[1/6] Download package from GitHub release" -Level STEP
-if ($ReleaseTag -eq "latest") {
-    $downloadUrl = "https://github.com/$GitHubRepo/releases/latest/download/$PackageAsset"
-} else {
-    $downloadUrl = "https://github.com/$GitHubRepo/releases/download/$ReleaseTag/$PackageAsset"
-}
 $packageRoot = Join-Path ([System.IO.Path]::GetTempPath()) "migration-package-$([System.Guid]::NewGuid().ToString('N'))"
-$zipPath = Join-Path ([System.IO.Path]::GetTempPath()) "$([System.Guid]::NewGuid().ToString('N'))-$PackageAsset"
 New-Item -ItemType Directory -Path $packageRoot -Force | Out-Null
-Write-Log "Downloading $downloadUrl ..."
-Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath -UseBasicParsing
-Expand-Archive -Path $zipPath -DestinationPath $packageRoot -Force
-Remove-Item $zipPath -Force
+
+if (-not [string]::IsNullOrWhiteSpace($LocalPackagePath)) {
+    if (-not (Test-Path $LocalPackagePath)) {
+        throw "LocalPackagePath '$LocalPackagePath' does not exist."
+    }
+    Write-Log "Using local package '$LocalPackagePath' (skipping GitHub download)." -Level WARN
+    Expand-Archive -Path $LocalPackagePath -DestinationPath $packageRoot -Force
+} else {
+    if ($GitHubRepo -eq "<owner>/<repo>") {
+        throw "Please provide -GitHubRepo '<owner>/<repo>' pointing to the release repository."
+    }
+
+    if ($ReleaseTag -eq "latest") {
+        $downloadUrl = "https://github.com/$GitHubRepo/releases/latest/download/$PackageAsset"
+    } else {
+        $downloadUrl = "https://github.com/$GitHubRepo/releases/download/$ReleaseTag/$PackageAsset"
+    }
+    $zipPath = Join-Path ([System.IO.Path]::GetTempPath()) "$([System.Guid]::NewGuid().ToString('N'))-$PackageAsset"
+    Write-Log "Downloading $downloadUrl ..."
+    Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath -UseBasicParsing
+    Expand-Archive -Path $zipPath -DestinationPath $packageRoot -Force
+    Remove-Item $zipPath -Force
+}
 foreach ($required in @("MigrationEngine", "MigrationEngineWeb")) {
     if (-not (Test-Path (Join-Path $packageRoot $required))) {
         throw "Package is missing required entry '$required'. The release asset '$PackageAsset' may be malformed."
