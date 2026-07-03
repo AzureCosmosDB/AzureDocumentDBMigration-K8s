@@ -6,23 +6,23 @@ param(
     [string]$PackageAsset = "migration-package.zip",
 
     # --- Local package source (temporary override; skips GitHub download) ---
-    [string]$LocalPackagePath = "c:\Users\lokeshlal\Downloads\migration-package.zip",
+    [string]$LocalPackagePath = "",
 
 
     # --- Azure target ---
     [string]$Subscription = "",
-    [string]$ResourceGroup = "mongo-migration-engine-rg-ll",
+    [string]$ResourceGroup = "mongo-migration-engine-rg",
     [string]$Location = "centralus",
-    [string]$AksClusterName = "mongo-migration-engine-aks-ll",
+    [string]$AksClusterName = "mongo-migration-engine-aks",
     [string]$AksNodeVmSize = "Standard_D4ds_v5",
     [int]$AksNodeCount = 1,
-    [string]$AcrName = "mongomigrationengineacrll",
-    [string]$PgServerName = "mongo-migration-engine-pg-ll",
+    [string]$AcrName = "mongomigrationengineacr",
+    [string]$PgServerName = "mongo-migration-engine-pg",
     [string]$PgAdminLogin = "migadmin",
     [string]$PgAdminPassword = "",
     [string]$PgDatabaseName = "migrations",
-    [string]$StorageAccountName = "mongomigenginestorella",
-    [string]$IdentityName = "mongo-engine-workload-id-lla"
+    [string]$StorageAccountName = "mongomigenginestore",
+    [string]$IdentityName = "mongo-engine-workload-id"
 )
 $ErrorActionPreference = "Stop"
 
