@@ -104,6 +104,9 @@ $IDENTITY_NAME = $IdentityName
 $K8S_NAMESPACE = "migrations"
 $K8S_SERVICE_ACCOUNT = "migration-engine-web-sa"
 $SCRIPT_DIR = $PSScriptRoot
+$ENGINE_IMAGE_NAME = "migration-engine"
+$WEB_IMAGE_NAME = "migration-engine-web"
+$IMAGE_TAG = "latest"
 
 Write-Host "=== Mongo Migration Platform - Customer Deployment ===" -ForegroundColor Cyan
 Write-Log "Configuration:" -Level STEP
@@ -209,6 +212,8 @@ if ($acrExists) {
 }
 
 $ACR_LOGIN_SERVER = az acr show --resource-group $RESOURCE_GROUP --name $ACR_NAME --query loginServer -o tsv
+$WEB_IMAGE = "$ACR_LOGIN_SERVER/${WEB_IMAGE_NAME}:${IMAGE_TAG}"
+$ENGINE_IMAGE = "$ACR_LOGIN_SERVER/${ENGINE_IMAGE_NAME}:${IMAGE_TAG}"
 Write-Log "  Login Server: $ACR_LOGIN_SERVER"
 
 # =============================================================================
@@ -338,7 +343,8 @@ $k8sTokens = @{
     "__NAMESPACE__"            = $K8S_NAMESPACE
     "__SERVICE_ACCOUNT__"      = $K8S_SERVICE_ACCOUNT
     "__IDENTITY_CLIENT_ID__"   = $IDENTITY_CLIENT_ID
-    "__ACR_LOGIN_SERVER__"     = $ACR_LOGIN_SERVER
+    "your-acr.azurecr.io/migration-engine-web:latest" = $WEB_IMAGE
+    "your-acr.azurecr.io/migration-engine:latest"     = $ENGINE_IMAGE
     "__PG_FQDN__"              = $PG_FQDN
     "__PG_DATABASE_NAME__"     = $PG_DATABASE_NAME
     "__IDENTITY_NAME__"        = $IDENTITY_NAME
@@ -365,11 +371,11 @@ Write-Log "  Kubernetes resources applied." -Level SUCCESS
 Write-Log "[9/9] Build container images (ACR Tasks)" -Level STEP
 
 Write-Log "  Building migration-engine-web in ACR (this may take a few minutes)..."
-Invoke-AzCmd "acr build --registry $ACR_NAME --image migration-engine-web:latest --file `"$(Join-Path $SCRIPT_DIR 'MigrationEngineWeb.Dockerfile')`" `"$packageRoot`""
+Invoke-AzCmd "acr build --registry $ACR_NAME --image ${WEB_IMAGE_NAME}:${IMAGE_TAG} --file `"$(Join-Path $SCRIPT_DIR 'MigrationEngineWeb.Dockerfile')`" `"$packageRoot`""
 Write-Log "  migration-engine-web built and pushed." -Level SUCCESS
 
 Write-Log "  Building migration-engine in ACR (this may take a few minutes)..."
-Invoke-AzCmd "acr build --registry $ACR_NAME --image migration-engine:latest --file `"$(Join-Path $SCRIPT_DIR 'MigrationEngine.Dockerfile')`" `"$packageRoot`""
+Invoke-AzCmd "acr build --registry $ACR_NAME --image ${ENGINE_IMAGE_NAME}:${IMAGE_TAG} --file `"$(Join-Path $SCRIPT_DIR 'MigrationEngine.Dockerfile')`" `"$packageRoot`""
 Write-Log "  migration-engine built and pushed." -Level SUCCESS
 
 # Restart deployment to pick up latest images

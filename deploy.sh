@@ -29,6 +29,9 @@ PG_ADMIN_PASSWORD="${PG_ADMIN_PASSWORD:-}"
 PG_DATABASE_NAME="${PG_DATABASE_NAME:-migrations}"
 STORAGE_ACCOUNT_NAME="${STORAGE_ACCOUNT_NAME:-mongomigenginestore}"
 IDENTITY_NAME="${IDENTITY_NAME:-mongo-engine-workload-id}"
+ENGINE_IMAGE_NAME="${ENGINE_IMAGE_NAME:-migration-engine}"
+WEB_IMAGE_NAME="${WEB_IMAGE_NAME:-migration-engine-web}"
+IMAGE_TAG="${IMAGE_TAG:-latest}"
 K8S_NAMESPACE="migrations"
 K8S_SERVICE_ACCOUNT="migration-engine-web-sa"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -44,7 +47,8 @@ apply_manifest() {
     sed -e "s|__NAMESPACE__|${K8S_NAMESPACE}|g" \
         -e "s|__SERVICE_ACCOUNT__|${K8S_SERVICE_ACCOUNT}|g" \
         -e "s|__IDENTITY_CLIENT_ID__|${IDENTITY_CLIENT_ID}|g" \
-        -e "s|__ACR_LOGIN_SERVER__|${ACR_LOGIN_SERVER}|g" \
+        -e "s|your-acr.azurecr.io/migration-engine-web:latest|${WEB_IMAGE}|g" \
+        -e "s|your-acr.azurecr.io/migration-engine:latest|${ENGINE_IMAGE}|g" \
         -e "s|__PG_FQDN__|${PG_FQDN}|g" \
         -e "s|__PG_DATABASE_NAME__|${PG_DATABASE_NAME}|g" \
         -e "s|__IDENTITY_NAME__|${IDENTITY_NAME}|g" \
@@ -159,6 +163,8 @@ else
 fi
 
 ACR_LOGIN_SERVER=$(az acr show --resource-group "$RESOURCE_GROUP" --name "$ACR_NAME" --query loginServer -o tsv)
+ENGINE_IMAGE="${ACR_LOGIN_SERVER}/${ENGINE_IMAGE_NAME}:${IMAGE_TAG}"
+WEB_IMAGE="${ACR_LOGIN_SERVER}/${WEB_IMAGE_NAME}:${IMAGE_TAG}"
 echo "  Login Server: $ACR_LOGIN_SERVER"
 
 # =============================================================================
@@ -279,11 +285,11 @@ echo "  Kubernetes resources applied."
 echo "--- [9/9] Build container images (ACR Tasks) ---"
 
 echo "  Building migration-engine-web in ACR (this may take a few minutes)..."
-az acr build --registry "$ACR_NAME" --image migration-engine-web:latest --file "$SCRIPT_DIR/MigrationEngineWeb.Dockerfile" "$PACKAGE_ROOT"
+az acr build --registry "$ACR_NAME" --image "${WEB_IMAGE_NAME}:${IMAGE_TAG}" --file "$SCRIPT_DIR/MigrationEngineWeb.Dockerfile" "$PACKAGE_ROOT"
 echo "  migration-engine-web built and pushed."
 
 echo "  Building migration-engine in ACR (this may take a few minutes)..."
-az acr build --registry "$ACR_NAME" --image migration-engine:latest --file "$SCRIPT_DIR/MigrationEngine.Dockerfile" "$PACKAGE_ROOT"
+az acr build --registry "$ACR_NAME" --image "${ENGINE_IMAGE_NAME}:${IMAGE_TAG}" --file "$SCRIPT_DIR/MigrationEngine.Dockerfile" "$PACKAGE_ROOT"
 echo "  migration-engine built and pushed."
 
 # Restart deployment to pick up latest images

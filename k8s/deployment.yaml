@@ -19,7 +19,7 @@ spec:
       serviceAccountName: __SERVICE_ACCOUNT__
       containers:
         - name: migration-engine-web
-          image: __ACR_LOGIN_SERVER__/migration-engine-web:latest
+          image: your-acr.azurecr.io/migration-engine-web:latest
           ports:
             - containerPort: 8080
               name: http
@@ -31,7 +31,7 @@ spec:
             - name: Kubernetes__Namespace
               value: "__NAMESPACE__"
             - name: Kubernetes__MigrationEngineImage
-              value: "__ACR_LOGIN_SERVER__/migration-engine:latest"
+              value: "your-acr.azurecr.io/migration-engine:latest"
             - name: PostgreSql__Host
               value: "__PG_FQDN__"
             - name: PostgreSql__Database
