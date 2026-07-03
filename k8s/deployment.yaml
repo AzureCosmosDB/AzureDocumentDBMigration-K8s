@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: migration-engine-web
+  namespace: __NAMESPACE__
+  labels:
+    app: migration-engine-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: migration-engine-web
+  template:
+    metadata:
+      labels:
+        app: migration-engine-web
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: __SERVICE_ACCOUNT__
+      containers:
+        - name: migration-engine-web
+          image: __ACR_LOGIN_SERVER__/migration-engine-web:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: ASPNETCORE_URLS
+              value: "http://+:8080"
+            - name: Kubernetes__Namespace
+              value: "__NAMESPACE__"
+            - name: Kubernetes__MigrationEngineImage
+              value: "__ACR_LOGIN_SERVER__/migration-engine:latest"
+            - name: PostgreSql__Host
+              value: "__PG_FQDN__"
+            - name: PostgreSql__Database
+              value: "__PG_DATABASE_NAME__"
+            - name: PostgreSql__Username
+              value: "__IDENTITY_NAME__"
+            - name: PostgreSql__Password
+              value: ""
+            - name: PostgreSql__SslMode
+              value: "Require"
+            - name: Storage__AccountName
+              value: "__STORAGE_ACCOUNT_NAME__"
+            - name: Storage__ContainerName
+              value: "migration-logs"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 15
+            timeoutSeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: migration-engine-web
+  namespace: __NAMESPACE__
+spec:
+  selector:
+    app: migration-engine-web
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+  type: LoadBalancer
