@@ -13,6 +13,9 @@ GITHUB_REPO="${GITHUB_REPO:-AzureCosmosDB/AzureDocumentDBMigration-K8s}"
 RELEASE_TAG="${RELEASE_TAG:-latest}"
 PACKAGE_ASSET="${PACKAGE_ASSET:-migration-package.zip}"
 
+# Local package source (temporary override; skips GitHub download)
+LOCAL_PACKAGE_PATH="${LOCAL_PACKAGE_PATH:-}"
+
 SUBSCRIPTION="${SUBSCRIPTION:-}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-mongo-migration-engine-rg}"
 LOCATION="${LOCATION:-centralus}"
@@ -77,25 +80,35 @@ fi
 # 0. Download and extract package from GitHub release
 # =============================================================================
 echo "--- [0/9] Download package from GitHub release ---"
-if [ "$GITHUB_REPO" = "<owner>/<repo>" ]; then
-    echo "ERROR: Set GITHUB_REPO='<owner>/<repo>' pointing to the release repository."
-    exit 1
-fi
-
-if [ "$RELEASE_TAG" = "latest" ]; then
-    DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/latest/download/$PACKAGE_ASSET"
-else
-    DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/download/$RELEASE_TAG/$PACKAGE_ASSET"
-fi
-
 PACKAGE_ROOT="$(mktemp -d)"
 ZIP_PATH="$(mktemp).zip"
 trap 'rm -rf "$PACKAGE_ROOT" "$ZIP_PATH"' EXIT
 
-echo "  Downloading $DOWNLOAD_URL ..."
-curl -fsSL "$DOWNLOAD_URL" -o "$ZIP_PATH"
-echo "  Extracting package..."
-unzip -q -o "$ZIP_PATH" -d "$PACKAGE_ROOT"
+if [ -n "${LOCAL_PACKAGE_PATH}" ]; then
+    if [ ! -f "$LOCAL_PACKAGE_PATH" ]; then
+        echo "ERROR: LOCAL_PACKAGE_PATH '$LOCAL_PACKAGE_PATH' does not exist."
+        exit 1
+    fi
+    echo "  Using local package '$LOCAL_PACKAGE_PATH' (skipping GitHub download)."
+    echo "  Extracting package..."
+    unzip -q -o "$LOCAL_PACKAGE_PATH" -d "$PACKAGE_ROOT"
+else
+    if [ "$GITHUB_REPO" = "<owner>/<repo>" ]; then
+        echo "ERROR: Set GITHUB_REPO='<owner>/<repo>' pointing to the release repository."
+        exit 1
+    fi
+
+    if [ "$RELEASE_TAG" = "latest" ]; then
+        DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/latest/download/$PACKAGE_ASSET"
+    else
+        DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/download/$RELEASE_TAG/$PACKAGE_ASSET"
+    fi
+
+    echo "  Downloading $DOWNLOAD_URL ..."
+    curl -fsSL "$DOWNLOAD_URL" -o "$ZIP_PATH"
+    echo "  Extracting package..."
+    unzip -q -o "$ZIP_PATH" -d "$PACKAGE_ROOT"
+fi
 
 for required in "MigrationEngine" "MigrationEngineWeb"; do
     if [ ! -e "$PACKAGE_ROOT/$required" ]; then
@@ -288,7 +301,28 @@ echo "  PostgreSQL:        $PG_FQDN"
 echo "  Storage Account:   $STORAGE_ACCOUNT_NAME"
 echo "  Managed Identity:  $IDENTITY_NAME (Client ID: $IDENTITY_CLIENT_ID)"
 echo ""
-echo "Check the service external IP with:"
-echo "  kubectl get svc migration-engine-web -n $K8S_NAMESPACE"
+echo "Waiting for External IP..."
+EXTERNAL_IP=""
+MAX_ATTEMPTS=30
+ATTEMPT=0
+while [ "$ATTEMPT" -lt "$MAX_ATTEMPTS" ]; do
+    ATTEMPT=$((ATTEMPT + 1))
+    EXTERNAL_IP=$(kubectl get svc migration-engine-web -n "$K8S_NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+    if [ -n "$EXTERNAL_IP" ]; then
+        break
+    fi
+    echo "  Attempt $ATTEMPT/$MAX_ATTEMPTS - External IP not yet assigned, waiting 10s..."
+    sleep 10
+done
+
+if [ -n "$EXTERNAL_IP" ]; then
+    echo "External IP: $EXTERNAL_IP"
+    echo "Access the web UI at: http://$EXTERNAL_IP"
+else
+    echo "External IP not assigned after $MAX_ATTEMPTS attempts."
+    echo "Check manually: kubectl get svc migration-engine-web -n $K8S_NAMESPACE"
+fi
+echo ""
 echo "Or via port-forward:"
 echo "  kubectl port-forward svc/migration-engine-web 8080:80 -n $K8S_NAMESPACE"
+echo "  Open http://localhost:8080"

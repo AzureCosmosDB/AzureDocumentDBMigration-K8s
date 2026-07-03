@@ -12,6 +12,9 @@ GITHUB_REPO="${GITHUB_REPO:-AzureCosmosDB/AzureDocumentDBMigration-K8s}"
 RELEASE_TAG="${RELEASE_TAG:-latest}"
 PACKAGE_ASSET="${PACKAGE_ASSET:-migration-package.zip}"
 
+# Local package source (temporary override; skips GitHub download)
+LOCAL_PACKAGE_PATH="${LOCAL_PACKAGE_PATH:-}"
+
 SUBSCRIPTION="${SUBSCRIPTION:-}"
 RESOURCE_GROUP="${RESOURCE_GROUP:-mongo-migration-engine-rg}"
 AKS_CLUSTER_NAME="${AKS_CLUSTER_NAME:-mongo-migration-engine-aks}"
@@ -53,17 +56,27 @@ if [ -n "${SUBSCRIPTION}" ]; then
 fi
 
 echo "--- [1/6] Download package from GitHub release ---"
-if [ "$RELEASE_TAG" = "latest" ]; then
-    DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/latest/download/$PACKAGE_ASSET"
-else
-    DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/download/$RELEASE_TAG/$PACKAGE_ASSET"
-fi
 PACKAGE_ROOT="$(mktemp -d)"
 ZIP_PATH="$(mktemp).zip"
 trap 'rm -rf "$PACKAGE_ROOT" "$ZIP_PATH"' EXIT
-echo "  Downloading $DOWNLOAD_URL ..."
-curl -fsSL "$DOWNLOAD_URL" -o "$ZIP_PATH"
-unzip -q -o "$ZIP_PATH" -d "$PACKAGE_ROOT"
+
+if [ -n "${LOCAL_PACKAGE_PATH}" ]; then
+    if [ ! -f "$LOCAL_PACKAGE_PATH" ]; then
+        echo "ERROR: LOCAL_PACKAGE_PATH '$LOCAL_PACKAGE_PATH' does not exist."
+        exit 1
+    fi
+    echo "  Using local package '$LOCAL_PACKAGE_PATH' (skipping GitHub download)."
+    unzip -q -o "$LOCAL_PACKAGE_PATH" -d "$PACKAGE_ROOT"
+else
+    if [ "$RELEASE_TAG" = "latest" ]; then
+        DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/latest/download/$PACKAGE_ASSET"
+    else
+        DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/download/$RELEASE_TAG/$PACKAGE_ASSET"
+    fi
+    echo "  Downloading $DOWNLOAD_URL ..."
+    curl -fsSL "$DOWNLOAD_URL" -o "$ZIP_PATH"
+    unzip -q -o "$ZIP_PATH" -d "$PACKAGE_ROOT"
+fi
 for required in "MigrationEngine" "MigrationEngineWeb"; do
     if [ ! -e "$PACKAGE_ROOT/$required" ]; then
         echo "ERROR: Package is missing required entry '$required'. Asset '$PACKAGE_ASSET' may be malformed."
