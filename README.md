@@ -85,13 +85,47 @@ Bash:
 GITHUB_REPO=owner/repo RESOURCE_GROUP=<rg> ./update.sh
 ```
 
-## Common options
+## Deploy parameters
 
-| PowerShell | Bash env var | Default |
-| ---------- | ------------ | ------- |
-| `-GitHubRepo` | `GITHUB_REPO` | `AzureCosmosDB/AzureDocumentDBMigration-K8s` |
-| `-ReleaseTag` | `RELEASE_TAG` | `latest` |
-| `-Subscription` | `SUBSCRIPTION` | (current) |
-| `-ResourceGroup` | `RESOURCE_GROUP` | `mongo-migration-engine-rg` |
-| `-AksClusterName` | `AKS_CLUSTER_NAME` | `mongo-migration-engine-aks` |
-| `-AcrName` | `ACR_NAME` | `mongomigrationengineacr` |
+All parameters for `deploy.ps1` / `deploy.sh`:
+
+| PowerShell | Bash env var | Default | Description |
+| ---------- | ------------ | ------- | ----------- |
+| `-GitHubRepo` | `GITHUB_REPO` | `AzureCosmosDB/AzureDocumentDBMigration-K8s` | GitHub repository (`owner/repo`) hosting the release. |
+| `-ReleaseTag` | `RELEASE_TAG` | `latest` | Release tag to deploy; use `latest` or a specific tag (e.g. `v1.0.0`). |
+| `-PackageAsset` | `PACKAGE_ASSET` | `migration-package.zip` | Name of the release asset to download. |
+| `-LocalPackagePath` | _(PowerShell only)_ | `""` | Path to a local package zip; when set, skips the GitHub download. |
+| `-Subscription` | `SUBSCRIPTION` | (current) | Azure subscription ID to target. |
+| `-ResourceGroup` | `RESOURCE_GROUP` | `mongo-migration-engine-rg` | Resource group to create/use. |
+| `-Location` | `LOCATION` | `centralus` | Azure region for all resources. |
+| `-AksClusterName` | `AKS_CLUSTER_NAME` | `mongo-migration-engine-aks` | Name of the AKS cluster. |
+| `-AksNodeVmSize` | `AKS_NODE_VM_SIZE` | `Standard_D4ds_v5` | VM size for AKS nodes. |
+| `-AksNodeCount` | `AKS_NODE_COUNT` | `1` | Number of AKS nodes. |
+| `-AcrName` | `ACR_NAME` | `mongomigrationengineacr` | Azure Container Registry name (globally unique). |
+| `-PgServerName` | `PG_SERVER_NAME` | `mongo-migration-engine-pg` | PostgreSQL flexible server name. |
+| `-PgAdminLogin` | `PG_ADMIN_LOGIN` | `migadmin` | PostgreSQL admin username. |
+| `-PgAdminPassword` | `PG_ADMIN_PASSWORD` | (prompted / required) | PostgreSQL admin password. PowerShell prompts securely if omitted; bash requires it. |
+| `-PgDatabaseName` | `PG_DATABASE_NAME` | `migrations` | PostgreSQL database name. |
+| `-StorageAccountName` | `STORAGE_ACCOUNT_NAME` | `mongomigenginestore` | Storage account name (globally unique). |
+| `-IdentityName` | `IDENTITY_NAME` | `mongo-engine-workload-id` | Managed (workload) identity name. |
+
+## Update parameters
+
+All parameters for `update.ps1` / `update.sh`:
+
+| PowerShell | Bash env var | Default | Description |
+| ---------- | ------------ | ------- | ----------- |
+| `-GitHubRepo` | `GITHUB_REPO` | `AzureCosmosDB/AzureDocumentDBMigration-K8s` | GitHub repository (`owner/repo`) hosting the release. |
+| `-ReleaseTag` | `RELEASE_TAG` | `latest` | Release tag to roll out; use `latest` or a specific tag (e.g. `v1.0.0`). |
+| `-PackageAsset` | `PACKAGE_ASSET` | `migration-package.zip` | Name of the release asset to download. |
+| `-Subscription` | `SUBSCRIPTION` | (current) | Azure subscription ID to target. |
+| `-ResourceGroup` | `RESOURCE_GROUP` | `mongo-migration-engine-rg` | Resource group of the existing deployment. |
+| `-AksClusterName` | `AKS_CLUSTER_NAME` | `mongo-migration-engine-aks` | Name of the existing AKS cluster. |
+| `-AcrName` | `ACR_NAME` | `mongomigrationengineacr` | Azure Container Registry to build images in. |
+| `-K8sNamespace` | `K8S_NAMESPACE` | `migrations` | Kubernetes namespace of the deployment. |
+| `-WebDeploymentName` | `WEB_DEPLOYMENT_NAME` | `migration-engine-web` | Name of the web Deployment to patch. |
+| `-WebContainerName` | `WEB_CONTAINER_NAME` | `migration-engine-web` | Container name within the Deployment. |
+| `-EngineImageName` | `ENGINE_IMAGE_NAME` | `migration-engine` | Image repository name for the engine. |
+| `-WebImageName` | `WEB_IMAGE_NAME` | `migration-engine-web` | Image repository name for the web app. |
+| `-ImageTag` | `IMAGE_TAG` | (timestamp `yyyyMMdd-HHmmss`) | Tag applied to the rebuilt images. |
+| `-RolloutTimeout` | `ROLLOUT_TIMEOUT` | `300s` | Timeout for `kubectl rollout status`. |
