@@ -5,20 +5,24 @@ param(
     [string]$ReleaseTag = "latest",
     [string]$PackageAsset = "migration-package.zip",
 
+    # --- Local package source (temporary override; skips GitHub download) ---
+    [string]$LocalPackagePath = "c:\Users\lokeshlal\Downloads\migration-package.zip",
+
+
     # --- Azure target ---
     [string]$Subscription = "",
-    [string]$ResourceGroup = "mongo-migration-engine-rg",
+    [string]$ResourceGroup = "mongo-migration-engine-rg-ll",
     [string]$Location = "centralus",
-    [string]$AksClusterName = "mongo-migration-engine-aks",
+    [string]$AksClusterName = "mongo-migration-engine-aks-ll",
     [string]$AksNodeVmSize = "Standard_D4ds_v5",
     [int]$AksNodeCount = 1,
-    [string]$AcrName = "mongomigrationengineacr",
-    [string]$PgServerName = "mongo-migration-engine-pg",
+    [string]$AcrName = "mongomigrationengineacrll",
+    [string]$PgServerName = "mongo-migration-engine-pg-ll",
     [string]$PgAdminLogin = "migadmin",
     [string]$PgAdminPassword = "",
     [string]$PgDatabaseName = "migrations",
-    [string]$StorageAccountName = "mongomigenginestore",
-    [string]$IdentityName = "mongo-engine-workload-id"
+    [string]$StorageAccountName = "mongomigenginestorella",
+    [string]$IdentityName = "mongo-engine-workload-id-lla"
 )
 $ErrorActionPreference = "Stop"
 
@@ -46,7 +50,7 @@ function Write-Log {
 function Invoke-AzCmd {
     param([string]$Command, [switch]$AllowFailure)
     Write-Log "az $Command" -Level CMD
-    $result = Invoke-Expression "az $Command" 2>&1
+    $result = Invoke-Expression "az $Command"
     if ($LASTEXITCODE -ne 0 -and -not $AllowFailure) {
         Write-Log "Command failed with exit code $LASTEXITCODE" -Level ERROR
         Write-Log "$result" -Level ERROR
@@ -118,25 +122,34 @@ Write-Host ""
 # 0. Download and extract package from GitHub release
 # =============================================================================
 Write-Log "[0/9] Download package from GitHub release" -Level STEP
-if ($GitHubRepo -eq "<owner>/<repo>") {
-    throw "Please provide -GitHubRepo '<owner>/<repo>' pointing to the release repository."
-}
-
-if ($ReleaseTag -eq "latest") {
-    $downloadUrl = "https://github.com/$GitHubRepo/releases/latest/download/$PackageAsset"
-} else {
-    $downloadUrl = "https://github.com/$GitHubRepo/releases/download/$ReleaseTag/$PackageAsset"
-}
-
 $packageRoot = Join-Path ([System.IO.Path]::GetTempPath()) "migration-package-$([System.Guid]::NewGuid().ToString('N'))"
-$zipPath = Join-Path ([System.IO.Path]::GetTempPath()) "$([System.Guid]::NewGuid().ToString('N'))-$PackageAsset"
 New-Item -ItemType Directory -Path $packageRoot -Force | Out-Null
 
-Write-Log "  Downloading $downloadUrl ..."
-Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath -UseBasicParsing
-Write-Log "  Extracting package..."
-Expand-Archive -Path $zipPath -DestinationPath $packageRoot -Force
-Remove-Item $zipPath -Force
+if (-not [string]::IsNullOrWhiteSpace($LocalPackagePath)) {
+    if (-not (Test-Path $LocalPackagePath)) {
+        throw "LocalPackagePath '$LocalPackagePath' does not exist."
+    }
+    Write-Log "  Using local package '$LocalPackagePath' (skipping GitHub download)." -Level WARN
+    Write-Log "  Extracting package..."
+    Expand-Archive -Path $LocalPackagePath -DestinationPath $packageRoot -Force
+} else {
+    if ($GitHubRepo -eq "<owner>/<repo>") {
+        throw "Please provide -GitHubRepo '<owner>/<repo>' pointing to the release repository."
+    }
+
+    if ($ReleaseTag -eq "latest") {
+        $downloadUrl = "https://github.com/$GitHubRepo/releases/latest/download/$PackageAsset"
+    } else {
+        $downloadUrl = "https://github.com/$GitHubRepo/releases/download/$ReleaseTag/$PackageAsset"
+    }
+
+    $zipPath = Join-Path ([System.IO.Path]::GetTempPath()) "$([System.Guid]::NewGuid().ToString('N'))-$PackageAsset"
+    Write-Log "  Downloading $downloadUrl ..."
+    Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath -UseBasicParsing
+    Write-Log "  Extracting package..."
+    Expand-Archive -Path $zipPath -DestinationPath $packageRoot -Force
+    Remove-Item $zipPath -Force
+}
 
 # Validate expected contents
 foreach ($required in @("MigrationEngine", "MigrationEngineWeb")) {
