@@ -32,6 +32,10 @@ LOCATION="${LOCATION:-centralus}"
 AKS_CLUSTER_NAME="${AKS_CLUSTER_NAME:-migrationaks-$SUFFIX}"
 AKS_NODE_VM_SIZE="${AKS_NODE_VM_SIZE:-Standard_D4ds_v5}"
 AKS_NODE_COUNT="${AKS_NODE_COUNT:-1}"
+# Optional: resource ID of an existing subnet to launch AKS nodes into so pods
+# can reach a MongoDB endpoint within that VNet. Empty = AKS-managed VNet.
+# example: /subscriptions/<subscriptionId>/resourceGroups/<vnetResourceGroup>/providers/Microsoft.Network/virtualNetworks/<vnetName>/subnets/<subnetName>
+VNET_SUBNET_ID="${VNET_SUBNET_ID:-}"
 ACR_NAME="${ACR_NAME:-migrationacr$SUFFIX}"
 PG_SERVER_NAME="${PG_SERVER_NAME:-migrationpg-$SUFFIX}"
 PG_ADMIN_LOGIN="${PG_ADMIN_LOGIN:-migadmin}"
@@ -73,6 +77,7 @@ echo "Name Suffix:       $SUFFIX"
 echo "Resource Group:    $RESOURCE_GROUP"
 echo "Location:          $LOCATION"
 echo "AKS Cluster:       $AKS_CLUSTER_NAME"
+if [ -n "$VNET_SUBNET_ID" ]; then echo "VNet Subnet:       $VNET_SUBNET_ID"; fi
 echo "ACR:               $ACR_NAME"
 echo "PostgreSQL Server: $PG_SERVER_NAME"
 echo "Storage Account:   $STORAGE_ACCOUNT_NAME"
@@ -245,7 +250,9 @@ if az aks show --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" &>/
     echo "AKS cluster '$AKS_CLUSTER_NAME' already exists, ensuring OIDC/workload identity..."
     az aks update --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" --enable-oidc-issuer --enable-workload-identity --output none 2>/dev/null || true
 else
-    az aks create --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" --location "$LOCATION" --node-count "$AKS_NODE_COUNT" --node-vm-size "$AKS_NODE_VM_SIZE" --enable-oidc-issuer --enable-workload-identity --enable-managed-identity --enable-cluster-autoscaler --min-count 1 --max-count 10 --attach-acr "$ACR_NAME" --network-plugin azure --generate-ssh-keys --output none
+    VNET_ARG=""
+    if [ -n "$VNET_SUBNET_ID" ]; then VNET_ARG="--vnet-subnet-id $VNET_SUBNET_ID"; fi
+    az aks create --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" --location "$LOCATION" --node-count "$AKS_NODE_COUNT" --node-vm-size "$AKS_NODE_VM_SIZE" --enable-oidc-issuer --enable-workload-identity --enable-managed-identity --enable-cluster-autoscaler --min-count 1 --max-count 10 --attach-acr "$ACR_NAME" --network-plugin azure $VNET_ARG --generate-ssh-keys --output none
     echo "Created AKS cluster '$AKS_CLUSTER_NAME'."
 fi
 

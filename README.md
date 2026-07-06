@@ -101,6 +101,7 @@ All parameters for `deploy.ps1` / `deploy.sh`:
 | `-AksClusterName` | `AKS_CLUSTER_NAME` | `mongo-migration-engine-aks` | Name of the AKS cluster. |
 | `-AksNodeVmSize` | `AKS_NODE_VM_SIZE` | `Standard_D4ds_v5` | VM size for AKS nodes. |
 | `-AksNodeCount` | `AKS_NODE_COUNT` | `1` | Number of AKS nodes. |
+| `-VnetSubnetId` | `VNET_SUBNET_ID` | `""` | Resource ID of an existing subnet to deploy AKS nodes into (Azure CNI), so pods can reach a MongoDB endpoint within that VNet. Format: `/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/virtualNetworks/<vnet>/subnets/<subnet>`. Empty = AKS creates its own VNet. |
 | `-AcrName` | `ACR_NAME` | `mongomigrationengineacr` | Azure Container Registry name (globally unique). |
 | `-PgServerName` | `PG_SERVER_NAME` | `mongo-migration-engine-pg` | PostgreSQL flexible server name. |
 | `-PgAdminLogin` | `PG_ADMIN_LOGIN` | `migadmin` | PostgreSQL admin username. |
@@ -108,6 +109,15 @@ All parameters for `deploy.ps1` / `deploy.sh`:
 | `-PgDatabaseName` | `PG_DATABASE_NAME` | `migrations` | PostgreSQL database name. |
 | `-StorageAccountName` | `STORAGE_ACCOUNT_NAME` | `mongomigenginestore` | Storage account name (globally unique). |
 | `-IdentityName` | `IDENTITY_NAME` | `mongo-engine-workload-id` | Managed (workload) identity name. |
+
+> **Networking note:** If `-VnetSubnetId` / `VNET_SUBNET_ID` is left empty, AKS
+> creates its own VNet and subnet. In that case the cluster may **not** be able
+> to reach your source/target MongoDB cluster (depending on its network
+> configuration) — e.g. a MongoDB behind a private endpoint, VNet-injected, or
+> restricted by a firewall/allowed-IP list. To guarantee connectivity, deploy
+> AKS into an existing subnet (via `-VnetSubnetId`) that has network reachability
+> to the MongoDB endpoint (same VNet, or a peered VNet with the required
+> NSG/route and private DNS/firewall rules).
 
 ## Update parameters
 

@@ -19,6 +19,10 @@ param(
     [string]$AksClusterName = "migrationaks-$Suffix",
     [string]$AksNodeVmSize = "Standard_D4ds_v5",
     [int]$AksNodeCount = 1,
+    # Optional: resource ID of an existing subnet to launch AKS nodes into so
+    # pods can reach a MongoDB endpoint within that VNet. Empty = AKS-managed VNet.
+    # example: /subscriptions/<subscriptionId>/resourceGroups/<vnetResourceGroup>/providers/Microsoft.Network/virtualNetworks/<vnetName>/subnets/<subnetName>
+    [string]$VnetSubnetId = "",
     [string]$AcrName = "migrationacr$Suffix",
     [string]$PgServerName = "migrationpg-$Suffix",
     [string]$PgAdminLogin = "migadmin",
@@ -97,6 +101,7 @@ $LOCATION = $Location
 $AKS_CLUSTER_NAME = $AksClusterName
 $AKS_NODE_VM_SIZE = $AksNodeVmSize
 $AKS_NODE_COUNT = $AksNodeCount
+$VNET_SUBNET_ID = $VnetSubnetId
 $ACR_NAME = $AcrName
 $PG_SERVER_NAME = $PgServerName
 $PG_ADMIN_LOGIN = $PgAdminLogin
@@ -119,6 +124,7 @@ Write-Log "  Name Suffix:       $Suffix"
 Write-Log "  Resource Group:    $RESOURCE_GROUP"
 Write-Log "  Location:          $LOCATION"
 Write-Log "  AKS Cluster:       $AKS_CLUSTER_NAME"
+if (-not [string]::IsNullOrWhiteSpace($VNET_SUBNET_ID)) { Write-Log "  VNet Subnet:       $VNET_SUBNET_ID" }
 Write-Log "  ACR:               $ACR_NAME"
 Write-Log "  PostgreSQL Server: $PG_SERVER_NAME"
 Write-Log "  Storage Account:   $STORAGE_ACCOUNT_NAME"
@@ -303,7 +309,8 @@ if ($aksExists) {
     az aks update --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER_NAME --enable-oidc-issuer --enable-workload-identity --output none 2>$null
 } else {
     Write-Log "Creating AKS cluster '$AKS_CLUSTER_NAME' (this may take 5-10 minutes)..."
-    Invoke-AzCmd "aks create --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER_NAME --location $LOCATION --node-count $AKS_NODE_COUNT --node-vm-size $AKS_NODE_VM_SIZE --enable-oidc-issuer --enable-workload-identity --enable-managed-identity --enable-cluster-autoscaler --min-count 1 --max-count 10 --attach-acr $ACR_NAME --network-plugin azure --generate-ssh-keys --output none"
+    $vnetSubnetArg = if (-not [string]::IsNullOrWhiteSpace($VNET_SUBNET_ID)) { "--vnet-subnet-id $VNET_SUBNET_ID" } else { "" }
+    Invoke-AzCmd "aks create --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER_NAME --location $LOCATION --node-count $AKS_NODE_COUNT --node-vm-size $AKS_NODE_VM_SIZE --enable-oidc-issuer --enable-workload-identity --enable-managed-identity --enable-cluster-autoscaler --min-count 1 --max-count 10 --attach-acr $ACR_NAME --network-plugin azure $vnetSubnetArg --generate-ssh-keys --output none"
     Write-Log "Created AKS cluster '$AKS_CLUSTER_NAME'." -Level SUCCESS
 }
 
