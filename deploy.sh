@@ -17,18 +17,28 @@ PACKAGE_ASSET="${PACKAGE_ASSET:-migration-package.zip}"
 LOCAL_PACKAGE_PATH="${LOCAL_PACKAGE_PATH:-}"
 
 SUBSCRIPTION="${SUBSCRIPTION:-}"
-RESOURCE_GROUP="${RESOURCE_GROUP:-mongo-migration-engine-rg}"
+
+# Random lowercase-alphabetic suffix appended to resource names so each run
+# gets unique names. Set SUFFIX="" to reuse a fixed environment.
+_gen_suffix() {
+    local chars="abcdefghijklmnopqrstuvwxyz" s=""
+    for _ in 1 2 3 4 5; do s+="${chars:RANDOM%26:1}"; done
+    printf '%s' "$s"
+}
+SUFFIX="${SUFFIX-$(_gen_suffix)}"
+
+RESOURCE_GROUP="${RESOURCE_GROUP:-migrationrg-$SUFFIX}"
 LOCATION="${LOCATION:-centralus}"
-AKS_CLUSTER_NAME="${AKS_CLUSTER_NAME:-mongo-migration-engine-aks}"
+AKS_CLUSTER_NAME="${AKS_CLUSTER_NAME:-migrationaks-$SUFFIX}"
 AKS_NODE_VM_SIZE="${AKS_NODE_VM_SIZE:-Standard_D4ds_v5}"
 AKS_NODE_COUNT="${AKS_NODE_COUNT:-1}"
-ACR_NAME="${ACR_NAME:-mongomigrationengineacr}"
-PG_SERVER_NAME="${PG_SERVER_NAME:-mongo-migration-engine-pg}"
+ACR_NAME="${ACR_NAME:-migrationacr$SUFFIX}"
+PG_SERVER_NAME="${PG_SERVER_NAME:-migrationpg-$SUFFIX}"
 PG_ADMIN_LOGIN="${PG_ADMIN_LOGIN:-migadmin}"
 PG_ADMIN_PASSWORD="${PG_ADMIN_PASSWORD:-}"
 PG_DATABASE_NAME="${PG_DATABASE_NAME:-migrations}"
-STORAGE_ACCOUNT_NAME="${STORAGE_ACCOUNT_NAME:-mongomigenginestore}"
-IDENTITY_NAME="${IDENTITY_NAME:-mongo-engine-workload-id}"
+STORAGE_ACCOUNT_NAME="${STORAGE_ACCOUNT_NAME:-migrationstr$SUFFIX}"
+IDENTITY_NAME="${IDENTITY_NAME:-migrationid-$SUFFIX}"
 ENGINE_IMAGE_NAME="${ENGINE_IMAGE_NAME:-migration-engine}"
 WEB_IMAGE_NAME="${WEB_IMAGE_NAME:-migration-engine-web}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
@@ -59,6 +69,7 @@ apply_manifest() {
 echo "=== Mongo Migration Platform - Customer Deployment ==="
 echo "GitHub Repo:       $GITHUB_REPO"
 echo "Release Tag:       $RELEASE_TAG"
+echo "Name Suffix:       $SUFFIX"
 echo "Resource Group:    $RESOURCE_GROUP"
 echo "Location:          $LOCATION"
 echo "AKS Cluster:       $AKS_CLUSTER_NAME"

@@ -11,18 +11,21 @@ param(
 
     # --- Azure target ---
     [string]$Subscription = "",
-    [string]$ResourceGroup = "mongo-migration-engine-rg",
+    # Random lowercase-alphabetic suffix appended to resource names so each run
+    # gets unique names. Pass -Suffix "" to reuse a fixed environment.
+    [string]$Suffix = (-join ((97..122) | Get-Random -Count 5 | ForEach-Object { [char]$_ })),
+    [string]$ResourceGroup = "migrationrg-$Suffix",
     [string]$Location = "centralus",
-    [string]$AksClusterName = "mongo-migration-engine-aks",
+    [string]$AksClusterName = "migrationaks-$Suffix",
     [string]$AksNodeVmSize = "Standard_D4ds_v5",
     [int]$AksNodeCount = 1,
-    [string]$AcrName = "mongomigrationengineacr",
-    [string]$PgServerName = "mongo-migration-engine-pg",
+    [string]$AcrName = "migrationacr$Suffix",
+    [string]$PgServerName = "migrationpg-$Suffix",
     [string]$PgAdminLogin = "migadmin",
     [string]$PgAdminPassword = "",
     [string]$PgDatabaseName = "migrations",
-    [string]$StorageAccountName = "mongomigenginestore",
-    [string]$IdentityName = "mongo-engine-workload-id"
+    [string]$StorageAccountName = "migrationstr$Suffix",
+    [string]$IdentityName = "migrationid-$Suffix"
 )
 $ErrorActionPreference = "Stop"
 
@@ -112,6 +115,7 @@ Write-Host "=== Mongo Migration Platform - Customer Deployment ===" -ForegroundC
 Write-Log "Configuration:" -Level STEP
 Write-Log "  GitHub Repo:       $GitHubRepo"
 Write-Log "  Release Tag:       $ReleaseTag"
+Write-Log "  Name Suffix:       $Suffix"
 Write-Log "  Resource Group:    $RESOURCE_GROUP"
 Write-Log "  Location:          $LOCATION"
 Write-Log "  AKS Cluster:       $AKS_CLUSTER_NAME"
