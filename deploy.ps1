@@ -23,6 +23,10 @@ param(
     # pods can reach a MongoDB endpoint within that VNet. Empty = AKS-managed VNet.
     # example: /subscriptions/<subscriptionId>/resourceGroups/<vnetResourceGroup>/providers/Microsoft.Network/virtualNetworks/<vnetName>/subnets/<subnetName>
     [string]$VnetSubnetId = "",
+    # Kubernetes service (ClusterIP) CIDR and its DNS IP. Must NOT overlap the
+    # node subnet / VNet / peered / on-prem ranges. Override if it conflicts.
+    [string]$ServiceCidr = "10.100.0.0/16",
+    [string]$DnsServiceIp = "10.100.0.10",
     [string]$AcrName = "migrationacr$Suffix",
     [string]$PgServerName = "migrationpg-$Suffix",
     [string]$PgAdminLogin = "migadmin",
@@ -102,6 +106,8 @@ $AKS_CLUSTER_NAME = $AksClusterName
 $AKS_NODE_VM_SIZE = $AksNodeVmSize
 $AKS_NODE_COUNT = $AksNodeCount
 $VNET_SUBNET_ID = $VnetSubnetId
+$SERVICE_CIDR = $ServiceCidr
+$DNS_SERVICE_IP = $DnsServiceIp
 $ACR_NAME = $AcrName
 $PG_SERVER_NAME = $PgServerName
 $PG_ADMIN_LOGIN = $PgAdminLogin
@@ -125,6 +131,7 @@ Write-Log "  Resource Group:    $RESOURCE_GROUP"
 Write-Log "  Location:          $LOCATION"
 Write-Log "  AKS Cluster:       $AKS_CLUSTER_NAME"
 if (-not [string]::IsNullOrWhiteSpace($VNET_SUBNET_ID)) { Write-Log "  VNet Subnet:       $VNET_SUBNET_ID" }
+Write-Log "  Service CIDR:      $SERVICE_CIDR (DNS $DNS_SERVICE_IP)"
 Write-Log "  ACR:               $ACR_NAME"
 Write-Log "  PostgreSQL Server: $PG_SERVER_NAME"
 Write-Log "  Storage Account:   $STORAGE_ACCOUNT_NAME"
@@ -310,7 +317,7 @@ if ($aksExists) {
 } else {
     Write-Log "Creating AKS cluster '$AKS_CLUSTER_NAME' (this may take 5-10 minutes)..."
     $vnetSubnetArg = if (-not [string]::IsNullOrWhiteSpace($VNET_SUBNET_ID)) { "--vnet-subnet-id $VNET_SUBNET_ID" } else { "" }
-    Invoke-AzCmd "aks create --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER_NAME --location $LOCATION --node-count $AKS_NODE_COUNT --node-vm-size $AKS_NODE_VM_SIZE --enable-oidc-issuer --enable-workload-identity --enable-managed-identity --enable-cluster-autoscaler --min-count 1 --max-count 10 --attach-acr $ACR_NAME --network-plugin azure $vnetSubnetArg --generate-ssh-keys --output none"
+    Invoke-AzCmd "aks create --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER_NAME --location $LOCATION --node-count $AKS_NODE_COUNT --node-vm-size $AKS_NODE_VM_SIZE --enable-oidc-issuer --enable-workload-identity --enable-managed-identity --enable-cluster-autoscaler --min-count 1 --max-count 10 --attach-acr $ACR_NAME --network-plugin azure --service-cidr $SERVICE_CIDR --dns-service-ip $DNS_SERVICE_IP $vnetSubnetArg --generate-ssh-keys --output none"
     Write-Log "Created AKS cluster '$AKS_CLUSTER_NAME'." -Level SUCCESS
 }
 

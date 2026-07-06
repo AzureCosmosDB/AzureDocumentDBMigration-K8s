@@ -102,6 +102,8 @@ All parameters for `deploy.ps1` / `deploy.sh`:
 | `-AksNodeVmSize` | `AKS_NODE_VM_SIZE` | `Standard_D4ds_v5` | VM size for AKS nodes. |
 | `-AksNodeCount` | `AKS_NODE_COUNT` | `1` | Number of AKS nodes. |
 | `-VnetSubnetId` | `VNET_SUBNET_ID` | `""` | Resource ID of an existing subnet to deploy AKS nodes into (Azure CNI), so pods can reach a MongoDB endpoint within that VNet. Format: `/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/virtualNetworks/<vnet>/subnets/<subnet>`. Empty = AKS creates its own VNet. |
+| `-ServiceCidr` | `SERVICE_CIDR` | `10.100.0.0/16` | Kubernetes service (ClusterIP) CIDR. Must **not** overlap the node subnet / VNet / peered / on-prem ranges. |
+| `-DnsServiceIp` | `DNS_SERVICE_IP` | `10.100.0.10` | Cluster DNS service IP; must fall within `ServiceCidr`. |
 | `-AcrName` | `ACR_NAME` | `mongomigrationengineacr` | Azure Container Registry name (globally unique). |
 | `-PgServerName` | `PG_SERVER_NAME` | `mongo-migration-engine-pg` | PostgreSQL flexible server name. |
 | `-PgAdminLogin` | `PG_ADMIN_LOGIN` | `migadmin` | PostgreSQL admin username. |
@@ -118,6 +120,12 @@ All parameters for `deploy.ps1` / `deploy.sh`:
 > AKS into an existing subnet (via `-VnetSubnetId`) that has network reachability
 > to the MongoDB endpoint (same VNet, or a peered VNet with the required
 > NSG/route and private DNS/firewall rules).
+>
+> When deploying into an existing subnet, the Kubernetes service CIDR
+> (`-ServiceCidr`, default `10.100.0.0/16`) must **not** overlap the subnet or
+> any address range the cluster reaches. If it conflicts, deployment fails with
+> `ServiceCidrOverlapExistingSubnetsCidr`; set `-ServiceCidr` / `-DnsServiceIp`
+> to a free range (the DNS IP must be inside the service CIDR).
 
 ## Update parameters
 
