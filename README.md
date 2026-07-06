@@ -93,6 +93,7 @@ All parameters for `deploy.ps1` / `deploy.sh`:
 | ---------- | ------------ | ------- | ----------- |
 | `-GitHubRepo` | `GITHUB_REPO` | `AzureCosmosDB/AzureDocumentDBMigration-K8s` | GitHub repository (`owner/repo`) hosting the release. |
 | `-ReleaseTag` | `RELEASE_TAG` | `latest` | Release tag to deploy; use `latest` or a specific tag (e.g. `v1.0.0`). |
+| `-Version` | `VERSION` | `""` | Specific release version to download; when set, **takes precedence** over `ReleaseTag` (e.g. `0.0.1` → `releases/download/0.0.1/<asset>`). |
 | `-PackageAsset` | `PACKAGE_ASSET` | `migration-package.zip` | Name of the release asset to download. |
 | `-LocalPackagePath` | _(PowerShell only)_ | `""` | Path to a local package zip; when set, skips the GitHub download. |
 | `-Subscription` | `SUBSCRIPTION` | (current) | Azure subscription ID to target. |

@@ -3,6 +3,9 @@ param(
     # --- GitHub release source ---
     [string]$GitHubRepo = "AzureCosmosDB/AzureDocumentDBMigration-K8s",
     [string]$ReleaseTag = "latest",
+    # Specific release version to download; when set it takes precedence over
+    # ReleaseTag (e.g. "0.0.1" -> releases/download/0.0.1/<asset>).
+    [string]$Version = "",
     [string]$PackageAsset = "migration-package.zip",
 
     # --- Local package source (temporary override; skips GitHub download) ---
@@ -126,6 +129,7 @@ Write-Host "=== Mongo Migration Platform - Customer Deployment ===" -ForegroundC
 Write-Log "Configuration:" -Level STEP
 Write-Log "  GitHub Repo:       $GitHubRepo"
 Write-Log "  Release Tag:       $ReleaseTag"
+if (-not [string]::IsNullOrWhiteSpace($Version)) { Write-Log "  Version:           $Version" }
 Write-Log "  Name Suffix:       $Suffix"
 Write-Log "  Resource Group:    $RESOURCE_GROUP"
 Write-Log "  Location:          $LOCATION"
@@ -157,10 +161,12 @@ if (-not [string]::IsNullOrWhiteSpace($LocalPackagePath)) {
         throw "Please provide -GitHubRepo '<owner>/<repo>' pointing to the release repository."
     }
 
-    if ($ReleaseTag -eq "latest") {
+    $releaseRef = if (-not [string]::IsNullOrWhiteSpace($Version)) { $Version } else { $ReleaseTag }
+    Write-Log "  Using release reference: $releaseRef"
+    if ($releaseRef -eq "latest") {
         $downloadUrl = "https://github.com/$GitHubRepo/releases/latest/download/$PackageAsset"
     } else {
-        $downloadUrl = "https://github.com/$GitHubRepo/releases/download/$ReleaseTag/$PackageAsset"
+        $downloadUrl = "https://github.com/$GitHubRepo/releases/download/$releaseRef/$PackageAsset"
     }
 
     $zipPath = Join-Path ([System.IO.Path]::GetTempPath()) "$([System.Guid]::NewGuid().ToString('N'))-$PackageAsset"

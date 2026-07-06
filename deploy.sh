@@ -11,6 +11,9 @@ set -euo pipefail
 # --- Configuration (override via environment variables) ---
 GITHUB_REPO="${GITHUB_REPO:-AzureCosmosDB/AzureDocumentDBMigration-K8s}"
 RELEASE_TAG="${RELEASE_TAG:-latest}"
+# Specific release version to download; when set it takes precedence over
+# RELEASE_TAG (e.g. "0.0.1" -> releases/download/0.0.1/<asset>).
+VERSION="${VERSION:-}"
 PACKAGE_ASSET="${PACKAGE_ASSET:-migration-package.zip}"
 
 # Local package source (temporary override; skips GitHub download)
@@ -77,6 +80,7 @@ apply_manifest() {
 echo "=== Mongo Migration Platform - Customer Deployment ==="
 echo "GitHub Repo:       $GITHUB_REPO"
 echo "Release Tag:       $RELEASE_TAG"
+if [ -n "$VERSION" ]; then echo "Version:           $VERSION"; fi
 echo "Name Suffix:       $SUFFIX"
 echo "Resource Group:    $RESOURCE_GROUP"
 echo "Location:          $LOCATION"
@@ -123,10 +127,12 @@ else
         exit 1
     fi
 
-    if [ "$RELEASE_TAG" = "latest" ]; then
+    RELEASE_REF="${VERSION:-$RELEASE_TAG}"
+    echo "  Using release reference: $RELEASE_REF"
+    if [ "$RELEASE_REF" = "latest" ]; then
         DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/latest/download/$PACKAGE_ASSET"
     else
-        DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/download/$RELEASE_TAG/$PACKAGE_ASSET"
+        DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/download/$RELEASE_REF/$PACKAGE_ASSET"
     fi
 
     echo "  Downloading $DOWNLOAD_URL ..."
