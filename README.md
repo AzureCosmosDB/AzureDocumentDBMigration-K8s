@@ -41,6 +41,17 @@ deployment in place (`kubectl set image` / `set env`).
 - PowerShell 7+ (for the `.ps1` scripts) **or** bash + `curl` + `unzip` (for the `.sh` scripts).
 - Sufficient Azure permissions to create the resource group and its resources.
 
+## Clone the repository
+
+The deploy/update scripts and the `k8s/` manifests and Dockerfiles they reference
+must be run from a local checkout. Clone the repository and change into it before
+running any command:
+
+```bash
+git clone https://github.com/AzureCosmosDB/AzureDocumentDBMigration-K8s.git
+cd AzureDocumentDBMigration-K8s
+```
+
 ## Deploy
 
 Provisions the resource group, managed identity, ACR, PostgreSQL, storage, and
@@ -85,6 +96,31 @@ Bash:
 GITHUB_REPO=owner/repo RESOURCE_GROUP=<rg> ./update.sh
 ```
 
+## Deploying from a local package
+
+By default the scripts download the compiled `migration-package.zip` from a
+GitHub release. To deploy or update from a package you already have on disk
+(for example a locally built package, a pre-release build, or an air-gapped
+environment with no GitHub access), point the scripts at it with
+`-LocalPackagePath` (PowerShell) or `LOCAL_PACKAGE_PATH` (bash).
+
+When set, the GitHub download is skipped entirely and the given zip is extracted
+and used as the build context instead; `-GitHubRepo` / `-ReleaseTag` are ignored.
+
+PowerShell:
+
+```powershell
+./deploy.ps1 -LocalPackagePath ./migration-package.zip -ResourceGroup <rg>
+./update.ps1 -LocalPackagePath ./migration-package.zip -ResourceGroup <rg>
+```
+
+Bash:
+
+```bash
+LOCAL_PACKAGE_PATH=./migration-package.zip RESOURCE_GROUP=<rg> ./deploy.sh
+LOCAL_PACKAGE_PATH=./migration-package.zip RESOURCE_GROUP=<rg> ./update.sh
+```
+
 ## Deploy parameters
 
 All parameters for `deploy.ps1` / `deploy.sh`:
@@ -95,7 +131,7 @@ All parameters for `deploy.ps1` / `deploy.sh`:
 | `-ReleaseTag` | `RELEASE_TAG` | `latest` | Release tag to deploy; use `latest` or a specific tag (e.g. `v1.0.0`). |
 | `-Version` | `VERSION` | `""` | Specific release version to download; when set, **takes precedence** over `ReleaseTag` (e.g. `0.0.1` → `releases/download/0.0.1/<asset>`). |
 | `-PackageAsset` | `PACKAGE_ASSET` | `migration-package.zip` | Name of the release asset to download. |
-| `-LocalPackagePath` | _(PowerShell only)_ | `""` | Path to a local package zip; when set, skips the GitHub download. |
+| `-LocalPackagePath` | `LOCAL_PACKAGE_PATH` | `""` | Path to a local package zip; when set, skips the GitHub download and uses this package instead. |
 | `-Subscription` | `SUBSCRIPTION` | (current) | Azure subscription ID to target. |
 | `-ResourceGroup` | `RESOURCE_GROUP` | `mongo-migration-engine-rg` | Resource group to create/use. |
 | `-Location` | `LOCATION` | `centralus` | Azure region for all resources. |
@@ -137,6 +173,7 @@ All parameters for `update.ps1` / `update.sh`:
 | `-GitHubRepo` | `GITHUB_REPO` | `AzureCosmosDB/AzureDocumentDBMigration-K8s` | GitHub repository (`owner/repo`) hosting the release. |
 | `-ReleaseTag` | `RELEASE_TAG` | `latest` | Release tag to roll out; use `latest` or a specific tag (e.g. `v1.0.0`). |
 | `-PackageAsset` | `PACKAGE_ASSET` | `migration-package.zip` | Name of the release asset to download. |
+| `-LocalPackagePath` | `LOCAL_PACKAGE_PATH` | `""` | Path to a local package zip; when set, skips the GitHub download and uses this package instead. |
 | `-Subscription` | `SUBSCRIPTION` | (current) | Azure subscription ID to target. |
 | `-ResourceGroup` | `RESOURCE_GROUP` | `mongo-migration-engine-rg` | Resource group of the existing deployment. |
 | `-AksClusterName` | `AKS_CLUSTER_NAME` | `mongo-migration-engine-aks` | Name of the existing AKS cluster. |
