@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # =============================================================================
-# Customer Deployment Script for Mongo Migration Platform (bash)
+# Customer Deployment Script for Azure DocumentDB Migration Platform (bash)
 # Downloads the published package from a GitHub release, builds container images
 # in ACR (no local Docker required), and provisions the full AKS environment.
 # Supports idempotent execution (skips existing resources).
@@ -36,7 +36,7 @@ AKS_CLUSTER_NAME="${AKS_CLUSTER_NAME:-migrationaks-$SUFFIX}"
 AKS_NODE_VM_SIZE="${AKS_NODE_VM_SIZE:-Standard_D4ds_v5}"
 AKS_NODE_COUNT="${AKS_NODE_COUNT:-1}"
 # Optional: resource ID of an existing subnet to launch AKS nodes into so pods
-# can reach a MongoDB endpoint within that VNet. Empty = AKS-managed VNet.
+# can reach a Source endpoint within that VNet. Empty = AKS-managed VNet.
 # example: /subscriptions/<subscriptionId>/resourceGroups/<vnetResourceGroup>/providers/Microsoft.Network/virtualNetworks/<vnetName>/subnets/<subnetName>
 VNET_SUBNET_ID="${VNET_SUBNET_ID:-}"
 # Kubernetes service (ClusterIP) CIDR and its DNS IP. Must NOT overlap the node
@@ -77,7 +77,7 @@ apply_manifest() {
         "$file" | kubectl apply -f -
 }
 
-echo "=== Mongo Migration Platform - Customer Deployment ==="
+echo "=== Azure DocumentDB Migration Platform - Customer Deployment ==="
 echo "GitHub Repo:       $GITHUB_REPO"
 echo "Release Tag:       $RELEASE_TAG"
 if [ -n "$VERSION" ]; then echo "Version:           $VERSION"; fi

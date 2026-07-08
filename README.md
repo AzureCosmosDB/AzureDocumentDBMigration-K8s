@@ -1,6 +1,6 @@
-# Mongo Migration Platform — Deployment
+# Azure DocumentDB Migration Platform — Deployment
 
-This repository hosts the deployment tooling for the Mongo Migration Platform.
+This repository hosts the deployment tooling for the Azure DocumentDB Migration Platform.
 The compiled application ships as a GitHub release asset (`migration-package.zip`);
 the scripts here download that asset, build the container images in your own
 Azure Container Registry (no local Docker required), and run everything on AKS.
@@ -133,29 +133,29 @@ All parameters for `deploy.ps1` / `deploy.sh`:
 | `-PackageAsset` | `PACKAGE_ASSET` | `migration-package.zip` | Name of the release asset to download. |
 | `-LocalPackagePath` | `LOCAL_PACKAGE_PATH` | `""` | Path to a local package zip; when set, skips the GitHub download and uses this package instead. |
 | `-Subscription` | `SUBSCRIPTION` | (current) | Azure subscription ID to target. |
-| `-ResourceGroup` | `RESOURCE_GROUP` | `mongo-migration-engine-rg` | Resource group to create/use. |
+| `-ResourceGroup` | `RESOURCE_GROUP` | `docdb-migration-engine-rg` | Resource group to create/use. |
 | `-Location` | `LOCATION` | `centralus` | Azure region for all resources. |
-| `-AksClusterName` | `AKS_CLUSTER_NAME` | `mongo-migration-engine-aks` | Name of the AKS cluster. |
+| `-AksClusterName` | `AKS_CLUSTER_NAME` | `docdb-migration-engine-aks` | Name of the AKS cluster. |
 | `-AksNodeVmSize` | `AKS_NODE_VM_SIZE` | `Standard_D4ds_v5` | VM size for AKS nodes. |
 | `-AksNodeCount` | `AKS_NODE_COUNT` | `1` | Number of AKS nodes. |
-| `-VnetSubnetId` | `VNET_SUBNET_ID` | `""` | Resource ID of an existing subnet to deploy AKS nodes into (Azure CNI), so pods can reach a MongoDB endpoint within that VNet. Format: `/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/virtualNetworks/<vnet>/subnets/<subnet>`. Empty = AKS creates its own VNet. |
+| `-VnetSubnetId` | `VNET_SUBNET_ID` | `""` | Resource ID of an existing subnet to deploy AKS nodes into (Azure CNI), so pods can reach a Source endpoint within that VNet. Format: `/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/virtualNetworks/<vnet>/subnets/<subnet>`. Empty = AKS creates its own VNet. |
 | `-ServiceCidr` | `SERVICE_CIDR` | `10.100.0.0/16` | Kubernetes service (ClusterIP) CIDR. Must **not** overlap the node subnet / VNet / peered / on-prem ranges. |
 | `-DnsServiceIp` | `DNS_SERVICE_IP` | `10.100.0.10` | Cluster DNS service IP; must fall within `ServiceCidr`. |
-| `-AcrName` | `ACR_NAME` | `mongomigrationengineacr` | Azure Container Registry name (globally unique). |
-| `-PgServerName` | `PG_SERVER_NAME` | `mongo-migration-engine-pg` | PostgreSQL flexible server name. |
+| `-AcrName` | `ACR_NAME` | `docdbmigrationengineacr` | Azure Container Registry name (globally unique). |
+| `-PgServerName` | `PG_SERVER_NAME` | `docdb-migration-engine-pg` | PostgreSQL flexible server name. |
 | `-PgAdminLogin` | `PG_ADMIN_LOGIN` | `migadmin` | PostgreSQL admin username. |
 | `-PgAdminPassword` | `PG_ADMIN_PASSWORD` | (prompted / required) | PostgreSQL admin password. PowerShell prompts securely if omitted; bash requires it. |
 | `-PgDatabaseName` | `PG_DATABASE_NAME` | `migrations` | PostgreSQL database name. |
-| `-StorageAccountName` | `STORAGE_ACCOUNT_NAME` | `mongomigenginestore` | Storage account name (globally unique). |
-| `-IdentityName` | `IDENTITY_NAME` | `mongo-engine-workload-id` | Managed (workload) identity name. |
+| `-StorageAccountName` | `STORAGE_ACCOUNT_NAME` | `docdbmigenginestore` | Storage account name (globally unique). |
+| `-IdentityName` | `IDENTITY_NAME` | `docdb-engine-workload-id` | Managed (workload) identity name. |
 
 > **Networking note:** If `-VnetSubnetId` / `VNET_SUBNET_ID` is left empty, AKS
 > creates its own VNet and subnet. In that case the cluster may **not** be able
-> to reach your source/target MongoDB cluster (depending on its network
-> configuration) — e.g. a MongoDB behind a private endpoint, VNet-injected, or
+> to reach your source/target cluster (depending on its network
+> configuration) — e.g. a cluster behind a private endpoint, VNet-injected, or
 > restricted by a firewall/allowed-IP list. To guarantee connectivity, deploy
 > AKS into an existing subnet (via `-VnetSubnetId`) that has network reachability
-> to the MongoDB endpoint (same VNet, or a peered VNet with the required
+> to the cluster endpoint (same VNet, or a peered VNet with the required
 > NSG/route and private DNS/firewall rules).
 >
 > When deploying into an existing subnet, the Kubernetes service CIDR
@@ -175,9 +175,9 @@ All parameters for `update.ps1` / `update.sh`:
 | `-PackageAsset` | `PACKAGE_ASSET` | `migration-package.zip` | Name of the release asset to download. |
 | `-LocalPackagePath` | `LOCAL_PACKAGE_PATH` | `""` | Path to a local package zip; when set, skips the GitHub download and uses this package instead. |
 | `-Subscription` | `SUBSCRIPTION` | (current) | Azure subscription ID to target. |
-| `-ResourceGroup` | `RESOURCE_GROUP` | `mongo-migration-engine-rg` | Resource group of the existing deployment. |
-| `-AksClusterName` | `AKS_CLUSTER_NAME` | `mongo-migration-engine-aks` | Name of the existing AKS cluster. |
-| `-AcrName` | `ACR_NAME` | `mongomigrationengineacr` | Azure Container Registry to build images in. |
+| `-ResourceGroup` | `RESOURCE_GROUP` | `docdb-migration-engine-rg` | Resource group of the existing deployment. |
+| `-AksClusterName` | `AKS_CLUSTER_NAME` | `docdb-migration-engine-aks` | Name of the existing AKS cluster. |
+| `-AcrName` | `ACR_NAME` | `docdbmigrationengineacr` | Azure Container Registry to build images in. |
 | `-K8sNamespace` | `K8S_NAMESPACE` | `migrations` | Kubernetes namespace of the deployment. |
 | `-WebDeploymentName` | `WEB_DEPLOYMENT_NAME` | `migration-engine-web` | Name of the web Deployment to patch. |
 | `-WebContainerName` | `WEB_CONTAINER_NAME` | `migration-engine-web` | Container name within the Deployment. |

@@ -10,9 +10,9 @@ param(
 
     # --- Azure target ---
     [string]$Subscription = "",
-    [string]$ResourceGroup = "mongo-migration-engine-rg",
-    [string]$AksClusterName = "mongo-migration-engine-aks",
-    [string]$AcrName = "mongomigrationengineacr",
+    [string]$ResourceGroup = "docdb-migration-engine-rg",
+    [string]$AksClusterName = "docdb-migration-engine-aks",
+    [string]$AcrName = "docdbmigrationengineacr",
     [string]$K8sNamespace = "migrations",
     [string]$WebDeploymentName = "migration-engine-web",
     [string]$WebContainerName = "migration-engine-web",
@@ -25,7 +25,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 # =============================================================================
-# Customer Update Script for Mongo Migration Platform (PowerShell)
+# Customer Update Script for Azure DocumentDB Migration Platform (PowerShell)
 # Downloads the latest published package from a GitHub release, rebuilds the
 # container images in ACR (no local Docker required), and rolls out the update.
 # =============================================================================
@@ -58,7 +58,7 @@ if ([string]::IsNullOrWhiteSpace($ImageTag)) {
 
 $SCRIPT_DIR = $PSScriptRoot
 
-Write-Host "=== Mongo Migration Platform - Customer Update ===" -ForegroundColor Cyan
+Write-Host "=== Azure DocumentDB Migration Platform - Customer Update ===" -ForegroundColor Cyan
 Write-Log "GitHub Repo:    $GitHubRepo"
 Write-Log "Release Tag:    $ReleaseTag"
 Write-Log "Resource Group: $ResourceGroup"

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # =============================================================================
-# Customer Update Script for Mongo Migration Platform (bash)
+# Customer Update Script for Azure DocumentDB Migration Platform (bash)
 # Downloads the latest published package from a GitHub release, rebuilds the
 # container images in ACR (no local Docker required), and rolls out the update.
 # =============================================================================
@@ -16,9 +16,9 @@ PACKAGE_ASSET="${PACKAGE_ASSET:-migration-package.zip}"
 LOCAL_PACKAGE_PATH="${LOCAL_PACKAGE_PATH:-}"
 
 SUBSCRIPTION="${SUBSCRIPTION:-}"
-RESOURCE_GROUP="${RESOURCE_GROUP:-mongo-migration-engine-rg}"
-AKS_CLUSTER_NAME="${AKS_CLUSTER_NAME:-mongo-migration-engine-aks}"
-ACR_NAME="${ACR_NAME:-mongomigrationengineacr}"
+RESOURCE_GROUP="${RESOURCE_GROUP:-docdb-migration-engine-rg}"
+AKS_CLUSTER_NAME="${AKS_CLUSTER_NAME:-docdb-migration-engine-aks}"
+ACR_NAME="${ACR_NAME:-docdbmigrationengineacr}"
 K8S_NAMESPACE="${K8S_NAMESPACE:-migrations}"
 WEB_DEPLOYMENT_NAME="${WEB_DEPLOYMENT_NAME:-migration-engine-web}"
 WEB_CONTAINER_NAME="${WEB_CONTAINER_NAME:-migration-engine-web}"
@@ -32,7 +32,7 @@ if [ -z "$IMAGE_TAG" ]; then
     IMAGE_TAG=$(date +%Y%m%d-%H%M%S)
 fi
 
-echo "=== Mongo Migration Platform - Customer Update ==="
+echo "=== Azure DocumentDB Migration Platform - Customer Update ==="
 echo "GitHub Repo:      $GITHUB_REPO"
 echo "Release Tag:      $RELEASE_TAG"
 echo "Resource Group:   $RESOURCE_GROUP"

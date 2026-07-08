@@ -23,7 +23,7 @@ param(
     [string]$AksNodeVmSize = "Standard_D4ds_v5",
     [int]$AksNodeCount = 1,
     # Optional: resource ID of an existing subnet to launch AKS nodes into so
-    # pods can reach a MongoDB endpoint within that VNet. Empty = AKS-managed VNet.
+    # pods can reach a Source endpoint within that VNet. Empty = AKS-managed VNet.
     # example: /subscriptions/<subscriptionId>/resourceGroups/<vnetResourceGroup>/providers/Microsoft.Network/virtualNetworks/<vnetName>/subnets/<subnetName>
     [string]$VnetSubnetId = "",
     # Kubernetes service (ClusterIP) CIDR and its DNS IP. Must NOT overlap the
@@ -41,7 +41,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 # =============================================================================
-# Customer Deployment Script for Mongo Migration Platform (PowerShell)
+# Customer Deployment Script for Azure DocumentDB Migration Platform (PowerShell)
 # Downloads the published package from a GitHub release, builds container images
 # in ACR (no local Docker required), and provisions the full AKS environment.
 # Supports idempotent execution (skips existing resources).
@@ -125,7 +125,7 @@ $ENGINE_IMAGE_NAME = "migration-engine"
 $WEB_IMAGE_NAME = "migration-engine-web"
 $IMAGE_TAG = "latest"
 
-Write-Host "=== Mongo Migration Platform - Customer Deployment ===" -ForegroundColor Cyan
+Write-Host "=== Azure DocumentDB Migration Platform - Customer Deployment ===" -ForegroundColor Cyan
 Write-Log "Configuration:" -Level STEP
 Write-Log "  GitHub Repo:       $GitHubRepo"
 Write-Log "  Release Tag:       $ReleaseTag"
