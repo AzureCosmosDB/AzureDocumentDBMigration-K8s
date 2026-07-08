@@ -30,6 +30,10 @@ param(
     # node subnet / VNet / peered / on-prem ranges. Override if it conflicts.
     [string]$ServiceCidr = "10.100.0.0/16",
     [string]$DnsServiceIp = "10.100.0.10",
+    # When set, the web app's Service is exposed via an INTERNAL Azure Load
+    # Balancer (private IP from the node subnet) instead of a public one, so it
+    # is only reachable from within the VNet / peered networks. Default = public.
+    [switch]$InternalLoadBalancer,
     [string]$AcrName = "migrationacr$Suffix",
     [string]$PgServerName = "migrationpg-$Suffix",
     [string]$PgAdminLogin = "migadmin",
@@ -111,6 +115,7 @@ $AKS_NODE_COUNT = $AksNodeCount
 $VNET_SUBNET_ID = $VnetSubnetId
 $SERVICE_CIDR = $ServiceCidr
 $DNS_SERVICE_IP = $DnsServiceIp
+$LB_INTERNAL = if ($InternalLoadBalancer) { "true" } else { "false" }
 $ACR_NAME = $AcrName
 $PG_SERVER_NAME = $PgServerName
 $PG_ADMIN_LOGIN = $PgAdminLogin
@@ -136,6 +141,7 @@ Write-Log "  Location:          $LOCATION"
 Write-Log "  AKS Cluster:       $AKS_CLUSTER_NAME"
 if (-not [string]::IsNullOrWhiteSpace($VNET_SUBNET_ID)) { Write-Log "  VNet Subnet:       $VNET_SUBNET_ID" }
 Write-Log "  Service CIDR:      $SERVICE_CIDR (DNS $DNS_SERVICE_IP)"
+Write-Log "  Load Balancer:     $(if ($InternalLoadBalancer) { 'Internal (private IP)' } else { 'Public' })"
 Write-Log "  ACR:               $ACR_NAME"
 Write-Log "  PostgreSQL Server: $PG_SERVER_NAME"
 Write-Log "  Storage Account:   $STORAGE_ACCOUNT_NAME"
@@ -367,6 +373,7 @@ $k8sTokens = @{
     "__NAMESPACE__"            = $K8S_NAMESPACE
     "__SERVICE_ACCOUNT__"      = $K8S_SERVICE_ACCOUNT
     "__IDENTITY_CLIENT_ID__"   = $IDENTITY_CLIENT_ID
+    "__LB_INTERNAL__"          = $LB_INTERNAL
     "your-acr.azurecr.io/migration-engine-web:latest" = $WEB_IMAGE
     "your-acr.azurecr.io/migration-engine:latest"     = $ENGINE_IMAGE
     "__PG_FQDN__"              = $PG_FQDN
@@ -439,10 +446,15 @@ while ($attempt -lt $maxAttempts) {
 }
 
 if ($externalIp) {
-    Write-Log "External IP: $externalIp" -Level SUCCESS
-    Write-Log "Access the web UI at: http://$externalIp"
+    $ipKind = if ($InternalLoadBalancer) { "Internal IP" } else { "External IP" }
+    Write-Log "${ipKind}: $externalIp" -Level SUCCESS
+    if ($InternalLoadBalancer) {
+        Write-Log "Access the web UI at http://$externalIp from within the VNet (or a peered/connected network)."
+    } else {
+        Write-Log "Access the web UI at: http://$externalIp"
+    }
 } else {
-    Write-Log "External IP not assigned after $maxAttempts attempts." -Level WARN
+    Write-Log "Service IP not assigned after $maxAttempts attempts." -Level WARN
     Write-Log "Check manually: kubectl get svc migration-engine-web -n $K8S_NAMESPACE"
 }
 Write-Host ""

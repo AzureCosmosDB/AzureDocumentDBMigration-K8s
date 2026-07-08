@@ -43,6 +43,14 @@ VNET_SUBNET_ID="${VNET_SUBNET_ID:-}"
 # subnet / VNet / peered / on-prem ranges. Override if it conflicts.
 SERVICE_CIDR="${SERVICE_CIDR:-10.100.0.0/16}"
 DNS_SERVICE_IP="${DNS_SERVICE_IP:-10.100.0.10}"
+# When "true", the web app's Service is exposed via an INTERNAL Azure Load
+# Balancer (private IP from the node subnet) instead of a public one, so it is
+# only reachable from within the VNet / peered networks. Default = public.
+INTERNAL_LOAD_BALANCER="${INTERNAL_LOAD_BALANCER:-false}"
+case "$(printf '%s' "$INTERNAL_LOAD_BALANCER" | tr '[:upper:]' '[:lower:]')" in
+    true|1|yes) LB_INTERNAL="true" ;;
+    *)          LB_INTERNAL="false" ;;
+esac
 ACR_NAME="${ACR_NAME:-migrationacr$SUFFIX}"
 PG_SERVER_NAME="${PG_SERVER_NAME:-migrationpg-$SUFFIX}"
 PG_ADMIN_LOGIN="${PG_ADMIN_LOGIN:-migadmin}"
@@ -68,6 +76,7 @@ apply_manifest() {
     sed -e "s|__NAMESPACE__|${K8S_NAMESPACE}|g" \
         -e "s|__SERVICE_ACCOUNT__|${K8S_SERVICE_ACCOUNT}|g" \
         -e "s|__IDENTITY_CLIENT_ID__|${IDENTITY_CLIENT_ID}|g" \
+        -e "s|__LB_INTERNAL__|${LB_INTERNAL}|g" \
         -e "s|your-acr.azurecr.io/migration-engine-web:latest|${WEB_IMAGE}|g" \
         -e "s|your-acr.azurecr.io/migration-engine:latest|${ENGINE_IMAGE}|g" \
         -e "s|__PG_FQDN__|${PG_FQDN}|g" \
@@ -87,6 +96,7 @@ echo "Location:          $LOCATION"
 echo "AKS Cluster:       $AKS_CLUSTER_NAME"
 if [ -n "$VNET_SUBNET_ID" ]; then echo "VNet Subnet:       $VNET_SUBNET_ID"; fi
 echo "Service CIDR:      $SERVICE_CIDR (DNS $DNS_SERVICE_IP)"
+if [ "$LB_INTERNAL" = "true" ]; then echo "Load Balancer:     Internal (private IP)"; else echo "Load Balancer:     Public"; fi
 echo "ACR:               $ACR_NAME"
 echo "PostgreSQL Server: $PG_SERVER_NAME"
 echo "Storage Account:   $STORAGE_ACCOUNT_NAME"
@@ -351,10 +361,15 @@ while [ "$ATTEMPT" -lt "$MAX_ATTEMPTS" ]; do
 done
 
 if [ -n "$EXTERNAL_IP" ]; then
-    echo "External IP: $EXTERNAL_IP"
-    echo "Access the web UI at: http://$EXTERNAL_IP"
+    if [ "$LB_INTERNAL" = "true" ]; then
+        echo "Internal IP: $EXTERNAL_IP"
+        echo "Access the web UI at http://$EXTERNAL_IP from within the VNet (or a peered/connected network)."
+    else
+        echo "External IP: $EXTERNAL_IP"
+        echo "Access the web UI at: http://$EXTERNAL_IP"
+    fi
 else
-    echo "External IP not assigned after $MAX_ATTEMPTS attempts."
+    echo "Service IP not assigned after $MAX_ATTEMPTS attempts."
     echo "Check manually: kubectl get svc migration-engine-web -n $K8S_NAMESPACE"
 fi
 echo ""

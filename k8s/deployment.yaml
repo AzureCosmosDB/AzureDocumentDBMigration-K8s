@@ -73,6 +73,8 @@ kind: Service
 metadata:
   name: migration-engine-web
   namespace: __NAMESPACE__
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "__LB_INTERNAL__"
 spec:
   selector:
     app: migration-engine-web

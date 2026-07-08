@@ -141,6 +141,7 @@ All parameters for `deploy.ps1` / `deploy.sh`:
 | `-VnetSubnetId` | `VNET_SUBNET_ID` | `""` | Resource ID of an existing subnet to deploy AKS nodes into (Azure CNI), so pods can reach a Source endpoint within that VNet. Format: `/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/virtualNetworks/<vnet>/subnets/<subnet>`. Empty = AKS creates its own VNet. |
 | `-ServiceCidr` | `SERVICE_CIDR` | `10.100.0.0/16` | Kubernetes service (ClusterIP) CIDR. Must **not** overlap the node subnet / VNet / peered / on-prem ranges. |
 | `-DnsServiceIp` | `DNS_SERVICE_IP` | `10.100.0.10` | Cluster DNS service IP; must fall within `ServiceCidr`. |
+| `-InternalLoadBalancer` | `INTERNAL_LOAD_BALANCER` | `false` | When set/`true`, exposes the web UI via an **internal** Azure Load Balancer (private IP from the node subnet) instead of a public one, so it is only reachable from within the VNet / peered networks. Default = public. |
 | `-AcrName` | `ACR_NAME` | `docdbmigrationengineacr` | Azure Container Registry name (globally unique). |
 | `-PgServerName` | `PG_SERVER_NAME` | `docdb-migration-engine-pg` | PostgreSQL flexible server name. |
 | `-PgAdminLogin` | `PG_ADMIN_LOGIN` | `migadmin` | PostgreSQL admin username. |
@@ -163,6 +164,16 @@ All parameters for `deploy.ps1` / `deploy.sh`:
 > any address range the cluster reaches. If it conflicts, deployment fails with
 > `ServiceCidrOverlapExistingSubnetsCidr`; set `-ServiceCidr` / `-DnsServiceIp`
 > to a free range (the DNS IP must be inside the service CIDR).
+
+> **Private (internal) endpoint:** By default the web UI is published on a
+> **public** IP. Pass `-InternalLoadBalancer` (PowerShell) or
+> `INTERNAL_LOAD_BALANCER=true` (bash) to instead provision an **internal** Azure
+> Load Balancer whose frontend IP is a **private** address from the AKS node
+> subnet. The endpoint is then reachable only from the same VNet, peered VNets,
+> or networks connected via VPN/ExpressRoute — never the public internet. You can
+> further restrict access with the node subnet's NSG (e.g. allow port 80 only
+> from specific source ranges). This pairs naturally with `-VnetSubnetId` so the
+> private IP lives in your existing VNet.
 
 ## Update parameters
 
