@@ -60,13 +60,12 @@ AKS, then builds and deploys the images.
 PowerShell:
 
 ```powershell
-./deploy.ps1 -GitHubRepo owner/repo -Subscription <sub-id> -ResourceGroup <rg>
+./deploy.ps1 -Subscription <sub-id> -ResourceGroup <rg>
 ```
 
 Bash:
 
 ```bash
-GITHUB_REPO=owner/repo \
 SUBSCRIPTION=<sub-id> \
 RESOURCE_GROUP=<rg> \
 PG_ADMIN_PASSWORD='<strong-password>' \
@@ -87,13 +86,13 @@ tag, and rolls out the new images.
 PowerShell:
 
 ```powershell
-./update.ps1 -GitHubRepo owner/repo -ResourceGroup <rg>
+./update.ps1 -ResourceGroup <rg>
 ```
 
 Bash:
 
 ```bash
-GITHUB_REPO=owner/repo RESOURCE_GROUP=<rg> ./update.sh
+RESOURCE_GROUP=<rg> ./update.sh
 ```
 
 ## Deploying from a local package
