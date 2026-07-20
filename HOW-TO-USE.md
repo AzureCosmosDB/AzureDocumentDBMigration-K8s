@@ -131,9 +131,10 @@ updated.
 
 ## 6. Cutover and completion
 
-During the CDC phase, when **no records migrate for 2 cycles** (the change
-stream has caught up), the migration becomes **Ready for Cutover** — a **Cut
-Over** button appears in **Migration details**.
+During the CDC phase, once the change stream has caught up and the target has
+effectively drained the backlog (no new records are being migrated and the
+source and target are in sync), the migration becomes **Ready for Cutover** — a
+**Cut Over** button appears in **Migration details**.
 
 1. Click **Cut Over**. The status changes to **Cutover Triggered**.
 2. The engine drains any remaining incoming events and then completes the
