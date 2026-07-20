@@ -5,6 +5,10 @@ The compiled application ships as a GitHub release asset (`migration-package.zip
 the scripts here download that asset, build the container images in your own
 Azure Container Registry (no local Docker required), and run everything on AKS.
 
+Once deployed, see [HOW-TO-USE.md](HOW-TO-USE.md) for a walkthrough of the
+Migration Engine web UI — creating a migration, tuning it while it runs, and
+completing cutover.
+
 ## Contents
 
 | File | Purpose |
@@ -14,6 +18,7 @@ Azure Container Registry (no local Docker required), and run everything on AKS.
 | `MigrationEngine.Dockerfile` | Runtime-only image for the migration engine (copies published output). |
 | `MigrationEngineWeb.Dockerfile` | Runtime-only image for the web app (also installs `kubectl`). |
 | `k8s/` | Kubernetes manifest templates applied during deployment (see below). |
+| `HOW-TO-USE.md` | Guide to using the Migration Engine web UI once deployed. |
 
 The Dockerfiles here are used directly by the deploy/update scripts as the
 `--file` argument for `az acr build`; the extracted release package is the build
