@@ -227,7 +227,7 @@ else
 fi
 
 # Allow Azure services to access PG
-az postgres flexible-server firewall-rule create --resource-group "$RESOURCE_GROUP" --server-name "$PG_SERVER_NAME" --name "AllowAzureServices" --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0 --output none
+az postgres flexible-server firewall-rule create --resource-group "$RESOURCE_GROUP" --name "$PG_SERVER_NAME" --rule-name "AllowAzureServices" --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0 --output none
 echo "  Firewall rule for Azure services configured."
 
 # Enable Microsoft Entra authentication on PG

@@ -273,7 +273,7 @@ if ($dbExists) {
 
 # Allow Azure services to access PG
 Write-Log "  Configuring firewall rule for Azure services..."
-Invoke-AzCmd "postgres flexible-server firewall-rule create --resource-group $RESOURCE_GROUP --server-name $PG_SERVER_NAME --name AllowAzureServices --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0 --output none"
+Invoke-AzCmd "postgres flexible-server firewall-rule create --resource-group $RESOURCE_GROUP --name $PG_SERVER_NAME --rule-name AllowAzureServices --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0 --output none"
 Write-Log "  Firewall rule configured." -Level SUCCESS
 
 # Enable Microsoft Entra authentication on PG
