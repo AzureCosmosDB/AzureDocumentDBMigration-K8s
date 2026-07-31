@@ -211,7 +211,7 @@ echo "--- [4/9] PostgreSQL Flexible Server ---"
 if az postgres flexible-server show --resource-group "$RESOURCE_GROUP" --name "$PG_SERVER_NAME" &>/dev/null; then
     echo "PostgreSQL server '$PG_SERVER_NAME' already exists, skipping."
 else
-    az postgres flexible-server create --resource-group "$RESOURCE_GROUP" --name "$PG_SERVER_NAME" --location "$LOCATION" --admin-user "$PG_ADMIN_LOGIN" --admin-password "$PG_ADMIN_PASSWORD" --sku-name Standard_B2s --tier Burstable --storage-size 32 --version 16 --public-access None --yes --output none
+    az postgres flexible-server create --resource-group "$RESOURCE_GROUP" --name "$PG_SERVER_NAME" --location "$LOCATION" --admin-user "$PG_ADMIN_LOGIN" --admin-password "$PG_ADMIN_PASSWORD" --sku-name Standard_B2s --tier Burstable --storage-size 32 --version 16 --public-access 0.0.0.0 --yes --output none
     echo "Created PostgreSQL server '$PG_SERVER_NAME'."
 fi
 
