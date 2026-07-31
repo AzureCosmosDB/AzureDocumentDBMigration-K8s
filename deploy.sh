@@ -35,6 +35,12 @@ LOCATION="${LOCATION:-centralus}"
 AKS_CLUSTER_NAME="${AKS_CLUSTER_NAME:-migrationaks-$SUFFIX}"
 AKS_NODE_VM_SIZE="${AKS_NODE_VM_SIZE:-Standard_D4ds_v5}"
 AKS_NODE_COUNT="${AKS_NODE_COUNT:-1}"
+# Microsoft Entra (Azure AD) integration for AKS. Required by org policies that
+# deny clusters without an aadProfile. --enable-aad is always applied.
+# Optionally restrict cluster-admin to one or more Entra group object IDs
+# (space-separated) and/or enable Azure RBAC for Kubernetes authorization.
+AAD_ADMIN_GROUP_OBJECT_IDS="${AAD_ADMIN_GROUP_OBJECT_IDS:-}"
+ENABLE_AZURE_RBAC="${ENABLE_AZURE_RBAC:-false}"
 # Optional: resource ID of an existing subnet to launch AKS nodes into so pods
 # can reach a Source endpoint within that VNet. Empty = AKS-managed VNet.
 # example: /subscriptions/<subscriptionId>/resourceGroups/<vnetResourceGroup>/providers/Microsoft.Network/virtualNetworks/<vnetName>/subnets/<subnetName>
@@ -268,12 +274,19 @@ echo "  Role assigned."
 # =============================================================================
 echo "--- [6/9] AKS Cluster ---"
 if az aks show --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" &>/dev/null; then
-    echo "AKS cluster '$AKS_CLUSTER_NAME' already exists, ensuring OIDC/workload identity..."
-    az aks update --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" --enable-oidc-issuer --enable-workload-identity --output none 2>/dev/null || true
+    echo "AKS cluster '$AKS_CLUSTER_NAME' already exists, ensuring OIDC/workload identity/Entra integration..."
+    AAD_UPDATE_ARG="--enable-aad"
+    if [ -n "$AAD_ADMIN_GROUP_OBJECT_IDS" ]; then AAD_UPDATE_ARG="$AAD_UPDATE_ARG --aad-admin-group-object-ids $AAD_ADMIN_GROUP_OBJECT_IDS"; fi
+    case "$(printf '%s' "$ENABLE_AZURE_RBAC" | tr '[:upper:]' '[:lower:]')" in true|1|yes) AAD_UPDATE_ARG="$AAD_UPDATE_ARG --enable-azure-rbac" ;; esac
+    az aks update --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" --enable-oidc-issuer --enable-workload-identity $AAD_UPDATE_ARG --output none 2>/dev/null || true
 else
     VNET_ARG=""
     if [ -n "$VNET_SUBNET_ID" ]; then VNET_ARG="--vnet-subnet-id $VNET_SUBNET_ID"; fi
-    az aks create --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" --location "$LOCATION" --node-count "$AKS_NODE_COUNT" --node-vm-size "$AKS_NODE_VM_SIZE" --enable-oidc-issuer --enable-workload-identity --enable-managed-identity --enable-cluster-autoscaler --min-count 1 --max-count 10 --attach-acr "$ACR_NAME" --network-plugin azure --service-cidr "$SERVICE_CIDR" --dns-service-ip "$DNS_SERVICE_IP" $VNET_ARG --generate-ssh-keys --output none
+    # --enable-aad adds the aadProfile required by org policy (Entra + K8s RBAC).
+    AAD_ARG="--enable-aad"
+    if [ -n "$AAD_ADMIN_GROUP_OBJECT_IDS" ]; then AAD_ARG="$AAD_ARG --aad-admin-group-object-ids $AAD_ADMIN_GROUP_OBJECT_IDS"; fi
+    case "$(printf '%s' "$ENABLE_AZURE_RBAC" | tr '[:upper:]' '[:lower:]')" in true|1|yes) AAD_ARG="$AAD_ARG --enable-azure-rbac" ;; esac
+    az aks create --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" --location "$LOCATION" --node-count "$AKS_NODE_COUNT" --node-vm-size "$AKS_NODE_VM_SIZE" --enable-oidc-issuer --enable-workload-identity --enable-managed-identity $AAD_ARG --enable-cluster-autoscaler --min-count 1 --max-count 10 --attach-acr "$ACR_NAME" --network-plugin azure --service-cidr "$SERVICE_CIDR" --dns-service-ip "$DNS_SERVICE_IP" $VNET_ARG --generate-ssh-keys --output none
     echo "Created AKS cluster '$AKS_CLUSTER_NAME'."
 fi
 
