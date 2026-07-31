@@ -286,7 +286,9 @@ else
     AAD_ARG="--enable-aad"
     if [ -n "$AAD_ADMIN_GROUP_OBJECT_IDS" ]; then AAD_ARG="$AAD_ARG --aad-admin-group-object-ids $AAD_ADMIN_GROUP_OBJECT_IDS"; fi
     case "$(printf '%s' "$ENABLE_AZURE_RBAC" | tr '[:upper:]' '[:lower:]')" in true|1|yes) AAD_ARG="$AAD_ARG --enable-azure-rbac" ;; esac
-    az aks create --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" --location "$LOCATION" --node-count "$AKS_NODE_COUNT" --node-vm-size "$AKS_NODE_VM_SIZE" --enable-oidc-issuer --enable-workload-identity --enable-managed-identity $AAD_ARG --enable-cluster-autoscaler --min-count 1 --max-count 10 --attach-acr "$ACR_NAME" --network-plugin azure --service-cidr "$SERVICE_CIDR" --dns-service-ip "$DNS_SERVICE_IP" $VNET_ARG --generate-ssh-keys --output none
+    # --enable-private-cluster makes the API server private, required by org policy (private control plane).
+    PRIVATE_ARG="--enable-private-cluster"
+    az aks create --resource-group "$RESOURCE_GROUP" --name "$AKS_CLUSTER_NAME" --location "$LOCATION" --node-count "$AKS_NODE_COUNT" --node-vm-size "$AKS_NODE_VM_SIZE" --enable-oidc-issuer --enable-workload-identity --enable-managed-identity $AAD_ARG $PRIVATE_ARG --enable-cluster-autoscaler --min-count 1 --max-count 10 --attach-acr "$ACR_NAME" --network-plugin azure --service-cidr "$SERVICE_CIDR" --dns-service-ip "$DNS_SERVICE_IP" $VNET_ARG --generate-ssh-keys --output none
     echo "Created AKS cluster '$AKS_CLUSTER_NAME'."
 fi
 

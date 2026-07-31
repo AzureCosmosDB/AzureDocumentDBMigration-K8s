@@ -343,7 +343,9 @@ if ($aksExists) {
     $aadArg = "--enable-aad"
     if (-not [string]::IsNullOrWhiteSpace($AAD_ADMIN_GROUP_OBJECT_IDS)) { $aadArg += " --aad-admin-group-object-ids $AAD_ADMIN_GROUP_OBJECT_IDS" }
     if ($EnableAzureRbac) { $aadArg += " --enable-azure-rbac" }
-    Invoke-AzCmd "aks create --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER_NAME --location $LOCATION --node-count $AKS_NODE_COUNT --node-vm-size $AKS_NODE_VM_SIZE --enable-oidc-issuer --enable-workload-identity --enable-managed-identity $aadArg --enable-cluster-autoscaler --min-count 1 --max-count 10 --attach-acr $ACR_NAME --network-plugin azure --service-cidr $SERVICE_CIDR --dns-service-ip $DNS_SERVICE_IP $vnetSubnetArg --generate-ssh-keys --output none"
+    # --enable-private-cluster makes the API server private, required by org policy (private control plane).
+    $privateArg = "--enable-private-cluster"
+    Invoke-AzCmd "aks create --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER_NAME --location $LOCATION --node-count $AKS_NODE_COUNT --node-vm-size $AKS_NODE_VM_SIZE --enable-oidc-issuer --enable-workload-identity --enable-managed-identity $aadArg $privateArg --enable-cluster-autoscaler --min-count 1 --max-count 10 --attach-acr $ACR_NAME --network-plugin azure --service-cidr $SERVICE_CIDR --dns-service-ip $DNS_SERVICE_IP $vnetSubnetArg --generate-ssh-keys --output none"
     Write-Log "Created AKS cluster '$AKS_CLUSTER_NAME'." -Level SUCCESS
 }
 
