@@ -5,11 +5,11 @@ param(
     [string]$ReleaseTag = "latest",
     # Specific release version to download; when set it takes precedence over
     # ReleaseTag (e.g. "0.0.1" -> releases/download/0.0.1/<asset>).
-    [string]$Version = "0.0.1-mongo34",
+    [string]$Version = "",
     [string]$PackageAsset = "migration-package.zip",
 
     # --- Local package source (temporary override; skips GitHub download) ---
-    [string]$LocalPackagePath = "c:\\Users\\lokeshlal\\Downloads\\migration-package.zip",
+    [string]$LocalPackagePath = "",
 
 
     # --- Azure target ---
