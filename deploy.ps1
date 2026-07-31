@@ -5,11 +5,11 @@ param(
     [string]$ReleaseTag = "latest",
     # Specific release version to download; when set it takes precedence over
     # ReleaseTag (e.g. "0.0.1" -> releases/download/0.0.1/<asset>).
-    [string]$Version = "",
+    [string]$Version = "0.0.1-mongo34",
     [string]$PackageAsset = "migration-package.zip",
 
     # --- Local package source (temporary override; skips GitHub download) ---
-    [string]$LocalPackagePath = "",
+    [string]$LocalPackagePath = "c:\\Users\\lokeshlal\\Downloads\\migration-package.zip",
 
 
     # --- Azure target ---
@@ -254,7 +254,7 @@ if ($pgExists) {
     Write-Log "PostgreSQL server '$PG_SERVER_NAME' already exists, skipping." -Level WARN
 } else {
     Write-Log "Creating PostgreSQL server '$PG_SERVER_NAME' (this may take a few minutes)..."
-    Invoke-AzCmd "postgres flexible-server create --resource-group $RESOURCE_GROUP --name $PG_SERVER_NAME --location $LOCATION --admin-user $PG_ADMIN_LOGIN --admin-password $PG_ADMIN_PASSWORD --sku-name Standard_B2s --tier Burstable --storage-size 32 --version 16 --yes --output none"
+    Invoke-AzCmd "postgres flexible-server create --resource-group $RESOURCE_GROUP --name $PG_SERVER_NAME --location $LOCATION --admin-user $PG_ADMIN_LOGIN --admin-password $PG_ADMIN_PASSWORD --sku-name Standard_B2s --tier Burstable --storage-size 32 --version 16 --public-access None --yes --output none"
     Write-Log "Created PostgreSQL server '$PG_SERVER_NAME'." -Level SUCCESS
 }
 
