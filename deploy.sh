@@ -219,10 +219,10 @@ PG_FQDN=$(az postgres flexible-server show --resource-group "$RESOURCE_GROUP" --
 echo "  FQDN: $PG_FQDN"
 
 # Create database if not exists
-if az postgres flexible-server db show --resource-group "$RESOURCE_GROUP" --server-name "$PG_SERVER_NAME" --name "$PG_DATABASE_NAME" &>/dev/null; then
+if az postgres flexible-server db show --resource-group "$RESOURCE_GROUP" --server-name "$PG_SERVER_NAME" --database-name "$PG_DATABASE_NAME" &>/dev/null; then
     echo "  Database '$PG_DATABASE_NAME' already exists."
 else
-    az postgres flexible-server db create --resource-group "$RESOURCE_GROUP" --server-name "$PG_SERVER_NAME" --name "$PG_DATABASE_NAME" --output none
+    az postgres flexible-server db create --resource-group "$RESOURCE_GROUP" --server-name "$PG_SERVER_NAME" --database-name "$PG_DATABASE_NAME" --output none
     echo "  Created database '$PG_DATABASE_NAME'."
 fi
 
